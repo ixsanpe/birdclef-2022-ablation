@@ -5,10 +5,26 @@ import numpy as np
 import pandas as pd
 
 class SimpleDataset(Dataset):
-    """
-    Read the files from the specified paths and return a tensor representing the audio
-    """
-    def __init__(self, df, data_path, mode='train', labels=None) -> None:
+    def __init__(
+        self, 
+        df: pd.DataFrame, 
+        data_path, 
+        mode: str='train', 
+        labels: list=None
+    ):
+        """
+        Read the files from the specified paths and return a tensor representing the audio
+        Parameters:
+            df: 
+                dataframe containing information on training data file system 
+                (at least 'filename', 'primary_label', 'secondary_label')
+            data_path:
+                path under which the data is stored in df['filename']
+            mode:
+                'train', 'validation' or 'test'; which mode to use this SimpleDataset
+            labels:
+                list of labels to be used with this data
+        """
         super().__init__()
         self.df = df 
         self.data_path = data_path
@@ -21,28 +37,43 @@ class SimpleDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
-    def setup_dataset(self, n_classes):
+    def setup_dataset(self, n_classes: int):
         """
         Convert dataframe entries to one-hot encodings of the classes, 
+        Parameters:
+            n_classes:
+                The number of classes to one-hot encode
         """
-        def one_hot(labels):
+        def one_hot(labels: list):
             """
             Return a list of one-hot encodings for passed labels
-            labels: list
+            Parameters
+                labels: 
+                    list of labels to one-hot encode
+            Returns:
+                one-hot encoded labels
             """
             num2vec = lambda lbl: (np.arange(n_classes) == lbl).astype(int)
             if isinstance(labels[0], list):
                 return [np.sum([num2vec(l) for l in lbls], axis=0) for lbls in labels]
             return [num2vec(lbl) for lbl in labels]
         
-        def text_to_num(s: pd.Series):
-            # if s is in self.labels, convert to that index, otherwise, set top index
+        def text_to_num(s):
+            """
+            if s is in self.labels, convert to that index, otherwise, set top index
+            Parameters:
+                s:
+                    iterable of str class names to be converted to indices
+            Returns:
+                the same datatype as s but with indices where the entries in s matched
+                labels for this dataset. Otherwise, the index is len(self.labels). 
+            """
 
             # check if this is the secondary label:
             bird2id = {bird: idx for idx, bird in enumerate(self.labels)}
             other = len(self.labels) # map non-existing entries to index len(labels)
 
-            if '[' in s[0]:
+            if '[' in s[0]: # list of lists
                 x = secondary_to_list(s)
                 present = []
                 for lbls in x:
@@ -52,6 +83,14 @@ class SimpleDataset(Dataset):
             return s.apply(lambda x: bird2id[x] if x in self.labels else other)
 
         def secondary_to_list(s: pd.Series):
+            """
+            Given a str representation of a list (secondary labels), convert this to an actual list
+            Parameters:
+                s:
+                    pd.Series with str entries encoding a list as "'[x_0, ..., x_n]'"
+            Returns:
+                the encoded list as a python list
+            """
             x = s.copy()
             x = x.apply(lambda z: z.replace('[', ''))
             x = x.apply(lambda z: z.replace(']', ''))
