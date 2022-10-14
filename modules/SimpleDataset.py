@@ -26,7 +26,7 @@ class SimpleDataset(Dataset):
                 list of labels to be used with this data
         """
         super().__init__()
-        self.df = df 
+        self.df = df.reset_index(drop=True) 
         self.data_path = data_path
         self.paths = df['filename']
         self.mode = mode 
@@ -105,17 +105,19 @@ class SimpleDataset(Dataset):
             secondary_label = text_to_num(df['secondary_labels'])
             self.secondary_label = one_hot(secondary_label)
         
+        elif self.mode == 'test':
+            # use empty labels
+            self.primary_label = [np.zeros((len(self.labels, )))] * len(df)
+            self.secondary_label = [np.zeros((len(self.labels, )))] * len(df)
+        
         else:
-            raise NotImplementedError
+            raise NotImplementedError('mode only implemented for \'train\' and \'test\'')
 
     def __getitem__(self, idx, debug=False):
-        if self.mode == 'train':
-            path = f"train_audio/{self.df.loc[idx, 'filename']}"
-            label = self.primary_label[idx] + self.secondary_label[idx]
-            if debug:
-                print(path)
-        else:
-            raise NotImplementedError
+        path = f"train_audio/{self.df.loc[idx, 'filename']}"
+        label = self.primary_label[idx] + self.secondary_label[idx]
+        
+        if debug: print(path)
 
         duration = 5 # TODO
         offset = 0 # TODO

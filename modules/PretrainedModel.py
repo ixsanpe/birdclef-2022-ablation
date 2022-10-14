@@ -30,6 +30,8 @@ class PretrainedModel(nn.Module):
         return self.backbone_out
 
     def forward(self, x):
+        while x.dim() < 3:
+            x = x.unsqueeze(-2)
         x = x.permute(0, 2, 1)
         x = x[:, None, :, :] # add extra dimension
         x = self.bn0(x)

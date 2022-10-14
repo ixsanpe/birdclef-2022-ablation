@@ -34,4 +34,7 @@ class Wav2Spec(nn.Module):
         self.wav2img = nn.Sequential(self.mel_spec, self.amplitude_to_db)
     
     def forward(self, x):
-        return self.wav2img(x)
+        if isinstance(x, tuple):
+            return (self.wav2img(x[0]), x[1])
+        else:
+            return self.wav2img(x)
