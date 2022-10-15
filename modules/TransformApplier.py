@@ -8,7 +8,7 @@ class TransformApplier(nn.Module):
     def __init__(
         self, 
         transform_list: list
-    ):
+    ): 
         super().__init__()
         self.transforms = nn.Sequential(*transform_list)
     

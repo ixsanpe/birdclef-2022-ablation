@@ -23,7 +23,7 @@ class PretrainedModel(nn.Module):
             self.backbone_out = self.backbone.num_features
         else:
             self.backbone_out = self.backbone.feature_info[-1]["num_chs"]
-
+ 
         self.bn0 = nn.InstanceNorm2d(1) # TODO: not sure if we need this?
     
     def get_out_dim(self):

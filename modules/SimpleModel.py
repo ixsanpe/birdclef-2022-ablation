@@ -13,7 +13,7 @@ def main():
     wav2spec = Wav2Spec()
 
     transforms2 = TransformApplier([nn.Identity()])
-
+ 
     cnn = PretrainedModel(
         model_name='efficientnet_b2', 
         in_chans=1, # normally 3 for RGB-images

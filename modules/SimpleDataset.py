@@ -82,7 +82,7 @@ class SimpleDataset(Dataset):
             
             return s.apply(lambda x: bird2id[x] if x in self.labels else other)
 
-        def secondary_to_list(s: pd.Series):
+        def secondary_to_list(s: pd.Series): 
             """
             Given a str representation of a list (secondary labels), convert this to an actual list
             Parameters:

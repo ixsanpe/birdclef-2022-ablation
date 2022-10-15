@@ -6,6 +6,6 @@ class OnlyXTransform(nn.Module):
 
     def forward(self, x):
         if isinstance(x, tuple):
-            return x[0]
+            return x[0] 
         else:
             return x 

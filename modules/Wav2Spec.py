@@ -37,4 +37,4 @@ class Wav2Spec(nn.Module):
         if isinstance(x, tuple):
             return (self.wav2img(x[0]), x[1])
         else:
-            return self.wav2img(x)
+            return self.wav2img(x) 

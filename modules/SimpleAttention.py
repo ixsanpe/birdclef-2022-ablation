@@ -11,4 +11,4 @@ class SimpleAttention(nn.Module):
     
     def forward(self, x):
         weight = torch.softmax(self.att(x), axis=1)
-        return (x * weight).sum(1)
+        return (x * weight).sum(1) 
