@@ -138,7 +138,7 @@ def main():
     with open(f'{DATA_PATH}scored_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:1000]
     tts = metadata.sample(frac=.05).index # train test split
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
