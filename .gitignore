@@ -8,3 +8,8 @@ sbatch.sh
 run_sbatch_BirdClef_train.sh
 sbatch_logs/*
 sbatch_logs/625066.out
+output/*
+wandb/*
+subscript.sh
+spec-file.txt
+

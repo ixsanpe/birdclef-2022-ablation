@@ -9,6 +9,7 @@ from modules.TransformApplier import *
 from modules.SimpleDataset import * 
 from modules.SimpleAttention import * 
 from modules.SelectSplitData import *
+from utils import ModelSaver
 
 import torch.nn as nn
 import pandas as pd 
@@ -16,18 +17,83 @@ import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
 from typing import Callable
+from torchmetrics.classification import MulticlassF1Score
+import wandb
+import time
+
 
 DATA_PATH = 'data/'
+OUTPUT_DIR = 'output/'
 
-def show_progress(
-    model, 
-    data_pipeline_val, 
-    val_loader, 
+def wandb_log_stats(
+    train_loss: list = [], 
+    val_loss: list=[], 
+    val_metric: list=[]
+):
+    """
+    sends the current training statistic to Weights and Biases
+    Parameters:
+        train_loss:
+            training loss, evaluated by cost function on training set
+        val_loss: 
+            validation loss, evaluated by cost function on validation set
+        val_metric: 
+            validation metric, evaluated by metric function on validation set
+    """
+
+    wandb.log({"train_loss": train_loss,
+        "val_loss": val_loss,
+        "val_metric" : val_metric})
+
+
+def wandb_log_spectrogram(
+    model,
+    data_pipeline_val,
+    val_loader,
     device, 
-    criterion, 
-    running_loss, 
-    epoch, 
-    i, 
+    wandb_spec_table
+):
+    """
+    Runs model on validation set and sends the first n batches of spectrogram, label, and prediction to Weights and Biases
+    Parameters:
+        model:
+            model for which to report progress
+        data_pipeline_val: 
+            Pre-processing pipeline of the validation data from audio signal to model input
+            data_pipeline_val should take a tuple (x, y) as an input
+        val_loader: 
+            data loader for validation data
+        device: 
+            device on which to train model
+        wandb_spec_data: 
+            The wandb table to save the data to
+
+    """
+    with torch.no_grad():
+        # only takes the first n batches
+        n = 1 # maximum amount of batches to evaluate
+        i = 0 # iterator
+        while i < min(len(val_loader), n):
+            # load file and do inference
+            x_v, y_v = next(iter(val_loader))
+            x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
+            y_v_pred = model(x_v)
+            # iterate over all elements in batch
+            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):
+                wandb_spec_table.add_data(wandb.Image(x_v_slice), torch.argmax(y_v_slice), torch.argmax(y_v_slice_pred))
+            i = i+1
+        wandb.log({"predictions": wandb_spec_table})
+
+         
+
+
+def validate(
+    model: nn.Module, 
+    data_pipeline_val : nn.Module, 
+    val_loader : DataLoader, 
+    device: str, 
+    criterion: Callable, 
+    metric = None,
 ):
     """
     print training progress of the model in terms of training and validation loss
@@ -47,16 +113,40 @@ def show_progress(
             total accumulated loss over training for this epoch
         epoch:
             current epoch for which to report progress
-        i:
-            current iteration in the epoch for which to report progress
     """
     with torch.no_grad():
-        val_loss = 0.
-        for j, (x_v, y_v) in enumerate(val_loader):
+        y_val_true = []
+        y_val_pred = []
+        running_val_loss = 0.
+        for x_v, y_v in val_loader:
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
-            val_loss += criterion(model(x_v), y_v)
+            y_v_pred = nn.functional.softmax(model(x_v), dim=1)
+            y_val_true.append(y_v)
+            y_val_pred.append(y_v_pred)
+            running_val_loss += criterion(y_v_pred, y_v)
         
-    print(f'epoch {epoch+1}, iteration {i}:\trunning loss = {running_loss/(i+1):.3f}\tvalidation loss = {val_loss/(j+1):.3f}') 
+        y_val_true = torch.cat(y_val_true).to('cpu')
+        y_val_pred = torch.cat(y_val_pred).to('cpu')
+        
+        val_loss = running_val_loss/len(val_loader)
+
+        if metric != None:
+            val_score = metric(y_val_pred, y_val_true)
+        else:
+            val_score= 0.
+
+    return val_loss, val_score
+
+def print_output(
+    train_loss :float = 0., 
+    train_metric :float = 0., 
+    val_loss :float = 0., 
+    val_metric :float=0.,
+    i: int=1,
+    max_i: int=1,
+    epoch :int = 0):
+    print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tvalidation loss = {val_loss:.3f}\ttrain metric = {train_metric:.3f}\tvalidation metric = {val_metric:.3f}') 
+
 
 def train(
     model: nn.Module, 
@@ -66,9 +156,12 @@ def train(
     val_loader: DataLoader, 
     optimizer: torch.optim.Optimizer, 
     criterion: Callable, 
+    metric: Callable, 
+    model_saver: callable=None,
     epochs: int=1,
     print_every: int=-1, 
-    device: str='cpu'
+    device: str='cpu',
+    name: str=""
 ):
     """
     Train the model 
@@ -89,6 +182,8 @@ def train(
             optimizer to train the model
         criterion:
             criterion (loss) by which to train the model
+        metric:
+            a metric for the validation
         epochs:
             number of epochs for which to train
         print_every:
@@ -97,24 +192,57 @@ def train(
             device on which to train
     
     """
-    
+    print('###########################\nStarting Training on %s \n###########################'%(device))
+    log_spectrogram = True
+    if log_spectrogram:
+        wandb_spec_table = wandb.Table(columns=['Sprectrogram', 'Predicted', 'Expected'])
+
+    train_loss, val_loss, val_metric = [], [], []
     for epoch in range(epochs):
         print(f'starting epoch {epoch+1} / {epochs}')
-        running_loss = 0.
+        running_train_loss = 0.
+        epoch_train_loss = 0.
+        epoch_train_metric = 0. # not used at the moment
+        epoch_val_loss = 0.
+        epoch_val_metric = 0.
+
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device).float()
             x, y = data_pipeline_train((x, y))
             preds = model(x)
+            preds = nn.functional.softmax(preds, dim=1)
             optimizer.zero_grad()
             loss = criterion(preds, y)
-            running_loss = running_loss + loss.item()
+            running_train_loss = running_train_loss + loss.item()
             loss.backward()
             optimizer.step()
-            if i % print_every == print_every-1:
-                show_progress(model, data_pipeline_val, val_loader, device, criterion, running_loss, epoch, i)
-        if print_every == -1:
-            show_progress(model, data_pipeline_val, val_loader, device, criterion, running_loss, epoch, i)    
             
+            
+            if i % print_every == print_every-1: 
+                epoch_val_loss, epoch_val_metric = validate(model, data_pipeline_val, val_loader, device, criterion, metric)
+                print_output(running_train_loss/i, epoch_train_metric, epoch_val_loss, epoch_val_metric, i,len(train_loader), epoch)
+
+
+        epoch_train_loss = running_train_loss/len(train_loader)
+
+        if print_every == -1:
+            epoch_val_loss, epoch_val_metric = validate(model, data_pipeline_val, val_loader, device, criterion, metric)
+            print_output(epoch_train_loss, epoch_train_metric, epoch_val_loss, epoch_val_metric,len(train_loader),len(train_loader), epoch)
+
+        wandb_log_stats(epoch_train_loss, epoch_val_loss, epoch_val_metric)
+        if log_spectrogram:
+            wandb_log_spectrogram(model, data_pipeline_train, val_loader, device, wandb_spec_table)
+             
+        if model_saver != None:
+            model_saver.save_best_model(epoch_val_loss, epoch, model, optimizer, criterion)
+
+        train_loss.append(epoch_train_loss)
+        val_loss.append(epoch_val_loss)
+        val_metric.append(epoch_val_metric)
+
+    # At the end of training: Save model and training curve
+    model_saver.save_final_modle(epochs, model, criterion) 
+    model_saver.save_plots(train_loss, val_loss)
                     
 
 def collate_fn(data):
@@ -124,30 +252,34 @@ def collate_fn(data):
      
 
 def main():
+
+    experiment_name = "baseline_" + str(int(time.time()))
     # for pre-processing
     # splitting
     duration = 30 
     n_splits = 5
+    test_split = 0.05
 
     # some hyperparameters
-    bs = 2 # batch size
-    epochs = 2
+    bs = 16 # batch size
+    epochs = 300
+    learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Load data 
     with open(f'{DATA_PATH}scored_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:1000]
-    tts = metadata.sample(frac=.05).index # train test split
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')#[:1000]
+    tts = metadata.sample(frac=test_split).index # train test split
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
 
     train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
     val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
 
-    train_loader = DataLoader(train_data, batch_size=bs, num_workers=8, collate_fn=collate_fn)
-    val_loader = DataLoader(val_data, batch_size=bs, num_workers=8, collate_fn=collate_fn)
+    train_loader = DataLoader(train_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=True)
+    val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn)
 
     # create mode
     transforms1 = TransformApplier([SelectSplitData(duration, n_splits)])
@@ -183,8 +315,33 @@ def main():
         # transforms4
     ).to(device)
 
-    optimizer = Adam(model.parameters(), )
-    criterion = nn.CrossEntropyLoss()
+    optimizer = Adam(model.parameters(), lr = learning_rate)
+    criterion = nn.CrossEntropyLoss(weight=None, reduction='mean')
+    metric = MulticlassF1Score(
+        num_classes = 152, # TODO check this
+        topk = 1, # this means we say that we take the label with the highest probability for prediction
+        average='micro' # TODO Discuss that
+    ) 
+    
+    model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
+
+    wandb.init(project="Baseline", entity="ai4goodbirdclef", name=experiment_name)
+
+    wandb.config = {
+    "epochs": epochs,
+    "batch_size": bs,
+    "learning_rate": learning_rate,
+    "device": device,
+    "duartion" : duration,
+    "n_splits" : n_splits,
+    "transforms1": transforms1,
+    "transforms2": transforms2,
+    "transforms3": transforms3,
+    "model": model,
+    "test_split" : test_split
+    }
+
+    wandb.watch(model)
 
     train(
         model, 
@@ -193,10 +350,12 @@ def main():
         train_loader, 
         val_loader, 
         optimizer, 
-        criterion, 
+        criterion,
+        metric,
+        model_saver=model_saver,
         epochs=epochs, 
         device=device, 
-        print_every=10, 
+        print_every=10
     )
 
 if __name__ == '__main__':
