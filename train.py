@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam 
 from typing import Callable
 
-DATA_PATH = 'birdclef-2022/'
+DATA_PATH = 'data/'
 
 def show_progress(
     model, 
@@ -193,4 +193,5 @@ def main():
     )
 
 if __name__ == '__main__':
+    print('Starting the training...')
     main()
