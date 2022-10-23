@@ -1,5 +1,6 @@
 import timm
 from torch import nn
+import torch 
 
 class PretrainedModel(nn.Module):
     def __init__(
@@ -29,16 +30,25 @@ class PretrainedModel(nn.Module):
     def get_out_dim(self):
         return self.backbone_out
 
-    def forward(self, x):
-        while x.dim() < 3:
-            x = x.unsqueeze(-2)
-        x = x.permute(0, 2, 1)
-        x = x[:, None, :, :] # add extra dimension
-        x = self.bn0(x)
+    def forward(self, x: torch.Tensor):
+        # while x.dim() < 3:
+        #     x = x.unsqueeze(-2)
+        # x = x.swapaxes(-1, -2)
+        # x = x.unsqueeze(-3) # add extra dimension
+        # if x.dim() > 4:
+        #     original_shape = x.shape
+        #     x = x.reshape(-1, *x.shape[2:])
+        #     x = self.bn0(x)
+        #     x = x.reshape(original_shape)
+        # else:
+        #     x = self.bn0(x)
+
+        x = x.swapaxes(-1, -2)
+        x = x.unsqueeze(-3) # add appropriate channel; (bs, channels=1, )
 
         x = self.backbone(x)  # (bs, channels, feats, time)
-        x = x.mean(3)  # pool freq
-        x = x.permute(0, 2, 1)  # bs, time, feats
+        x = x.mean(-2)  # pool freq
+        x = x.swapaxes(-1, -2)  # bs, time, feats
 
         return x
 

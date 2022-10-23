@@ -8,6 +8,7 @@ from modules.Wav2Spec import *
 from modules.TransformApplier import * 
 from modules.SimpleDataset import * 
 from modules.SimpleAttention import * 
+from modules.SelectSplitData import *
 
 import torch.nn as nn
 import pandas as pd 
@@ -117,12 +118,17 @@ def train(
                     
 
 def collate_fn(data):
-    max_dim = 1600000
+    max_dim = max([d[0].shape[-1] for d in data])# 1600000
     pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
     return torch.stack([pad_x(d[0]) for d in data], axis=0), torch.stack([torch.tensor(d[1]) for d in data])
      
 
 def main():
+    # for pre-processing
+    # splitting
+    duration = 30 
+    n_splits = 5
+
     # some hyperparameters
     bs = 2 # batch size
     epochs = 2
@@ -132,7 +138,7 @@ def main():
     with open(f'{DATA_PATH}scored_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:1000]
     tts = metadata.sample(frac=.05).index # train test split
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
@@ -144,7 +150,7 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=8, collate_fn=collate_fn)
 
     # create mode
-    transforms1 = TransformApplier([nn.Identity()])
+    transforms1 = TransformApplier([SelectSplitData(duration, n_splits)])
 
     wav2spec = Wav2Spec()
 
@@ -155,9 +161,9 @@ def main():
         in_chans=1, # normally 3 for RGB-images
     )
 
-    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim())])
+    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
 
-    output_head = OutputHead(n_in=cnn.get_out_dim(), n_out=21)
+    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=21)
 
     data_pipeline_train = nn.Sequential(
         transforms1, 
@@ -168,12 +174,13 @@ def main():
     data_pipeline_val = nn.Sequential(
         transforms1, 
         wav2spec, 
-    ).to(device)
+    ).to(device) # Leaving out transforms2 since I think it will mostly be relevant for training
 
     model = nn.Sequential(
         cnn,
         transforms3, 
         output_head,
+        # transforms4
     ).to(device)
 
     optimizer = Adam(model.parameters(), )
