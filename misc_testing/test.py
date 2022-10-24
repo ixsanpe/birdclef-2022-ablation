@@ -1,4 +1,4 @@
-from simple_cnn import * 
+from archived_code.simple_cnn import * 
 import matplotlib.pyplot as plt 
 
 if __name__ == '__main__':
