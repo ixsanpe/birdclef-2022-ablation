@@ -118,7 +118,7 @@ def train(
                     
 
 def collate_fn(data):
-    max_dim = max([d[0].shape[-1] for d in data])# 1600000
+    max_dim = max([d[0].shape[-1] for d in data])
     pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
     return torch.stack([pad_x(d[0]) for d in data], axis=0), torch.stack([torch.tensor(d[1]) for d in data])
      
@@ -127,7 +127,7 @@ def main():
     # for pre-processing
     # splitting
     duration = 30 
-    n_splits = 5
+    n_splits = 6
 
     # some hyperparameters
     bs = 2 # batch size
@@ -138,7 +138,17 @@ def main():
     with open(f'{DATA_PATH}scored_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:1000]
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
+    # choose only samples with a positive label
+    full_dataset = SimpleDataset(metadata, DATA_PATH, mode='train', labels=birds)
+    # positive ids
+    def find_positive(dataset):
+        primary_labels = np.stack(dataset.primary_label)
+        secondary_labels = np.stack(dataset.secondary_label)
+        labels = primary_labels + secondary_labels
+        return np.argwhere(labels.max(axis=1)>0).squeeze()
+    ids = find_positive(full_dataset)
+    metadata = metadata.iloc[ids].reset_index()
     tts = metadata.sample(frac=.05).index # train test split
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
