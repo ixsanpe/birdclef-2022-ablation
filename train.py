@@ -9,6 +9,7 @@ from modules.TransformApplier import *
 from modules.SimpleDataset import * 
 from modules.SimpleAttention import * 
 from modules.SelectSplitData import *
+from modules.Normalization import *
 from utils import ModelSaver
 
 import torch.nn as nn
@@ -73,13 +74,19 @@ def wandb_log_spectrogram(
         # only takes the first n batches
         n = 1 # maximum amount of batches to evaluate
         i = 0 # iterator
+        # skip the first n images in validation loader, these have constant values due to padding
+        next(iter(val_loader))
+        next(iter(val_loader))
+        next(iter(val_loader))
         while i < min(len(val_loader), n):
             # load file and do inference
             x_v, y_v = next(iter(val_loader))
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
             y_v_pred = model(x_v)
-            # iterate over all elements in batch
-            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):
+            #print('First:' ,x_v[0,...])
+            # iterate over all slices from chunk
+            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):       
+                #print(x_v_slice)         
                 wandb_spec_table.add_data(wandb.Image(x_v_slice), torch.argmax(y_v_slice), torch.argmax(y_v_slice_pred))
             i = i+1
         wandb.log({"predictions": wandb_spec_table})
@@ -208,6 +215,8 @@ def train(
 
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device).float()
+            #print(x,y)
+            #print(x.shape, y.shape)
             x, y = data_pipeline_train((x, y))
             preds = model(x)
             preds = nn.functional.softmax(preds, dim=1)
@@ -241,7 +250,7 @@ def train(
         val_metric.append(epoch_val_metric)
 
     # At the end of training: Save model and training curve
-    model_saver.save_final_modle(epochs, model, criterion) 
+    model_saver.save_final_model(epochs, model, criterion) 
     model_saver.save_plots(train_loss, val_loss)
                     
 
@@ -282,11 +291,11 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn)
 
     # create mode
-    transforms1 = TransformApplier([SelectSplitData(duration, n_splits)])
+    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits)])
 
     wav2spec = Wav2Spec()
 
-    transforms2 = TransformApplier([nn.Identity()])
+    transforms2 = TransformApplier([nn.Identity(), InstanceNorm()]) 
 
     cnn = PretrainedModel(
         model_name='efficientnet_b2', 
@@ -306,6 +315,7 @@ def main():
     data_pipeline_val = nn.Sequential(
         transforms1, 
         wav2spec, 
+        transforms2
     ).to(device) # Leaving out transforms2 since I think it will mostly be relevant for training
 
     model = nn.Sequential(
@@ -318,16 +328,16 @@ def main():
     optimizer = Adam(model.parameters(), lr = learning_rate)
     criterion = nn.CrossEntropyLoss(weight=None, reduction='mean')
     metric = MulticlassF1Score(
-        num_classes = 152, # TODO check this
+        num_classes = 21, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
         average='micro' # TODO Discuss that
     ) 
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
-    wandb.init(project="Baseline", entity="ai4goodbirdclef", name=experiment_name)
+    
 
-    wandb.config = {
+    config = {
     "epochs": epochs,
     "batch_size": bs,
     "learning_rate": learning_rate,
@@ -341,6 +351,7 @@ def main():
     "test_split" : test_split
     }
 
+    wandb.init(project="Baseline", entity="ai4goodbirdclef", name=experiment_name, config=config)
     wandb.watch(model)
 
     train(
