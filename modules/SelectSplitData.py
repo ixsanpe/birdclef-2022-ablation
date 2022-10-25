@@ -8,8 +8,7 @@ class SelectSplitData(nn.Module):
         duration: int, 
         n_splits: int, 
         offset=None, 
-        sr=16000,
-        device
+        sr=16000
     ):
 
         """
