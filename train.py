@@ -26,6 +26,19 @@ import time
 DATA_PATH = 'data/'
 OUTPUT_DIR = 'output/'
 
+def print_probability_ranking(y, n=5):
+    assert n <= len(y)
+
+    y = nn.functional.softmax(y, dim=0)
+
+    output = ""
+    sorted, indices = torch.sort(y)
+
+    for i in range(n):
+        output += "#%i   Class: %i   Prob: %.3f\n"%(i, indices[i], sorted[i])
+
+    return output
+
 def wandb_log_stats(
     train_loss: list = [], 
     val_loss: list=[], 
@@ -73,21 +86,25 @@ def wandb_log_spectrogram(
     with torch.no_grad():
         # only takes the first n batches
         n = 1 # maximum amount of batches to evaluate
-        i = 0 # iterator
+        i = 0 # running index of example
+        j = 0 # running index of val_loader
         # skip the first n images in validation loader, these have constant values due to padding
-        next(iter(val_loader))
-        next(iter(val_loader))
-        next(iter(val_loader))
-        while i < min(len(val_loader), n):
+
+        while i < n and j < len(val_loader):
             # load file and do inference
-            x_v, y_v = next(iter(val_loader))
+            # iterates over val loader until file with non-constant values is found
+            while True:
+                x_v, y_v = next(iter(val_loader))
+                j = j+1
+                if torch.var(x_v) != 0:
+                    break
+            
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
             y_v_pred = model(x_v)
-            #print('First:' ,x_v[0,...])
+
             # iterate over all slices from chunk
-            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):       
-                #print(x_v_slice)         
-                wandb_spec_table.add_data(wandb.Image(x_v_slice), torch.argmax(y_v_slice), torch.argmax(y_v_slice_pred))
+            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):
+                wandb_spec_table.add_data(wandb.Image(x_v_slice), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
             i = i+1
         wandb.log({"predictions": wandb_spec_table})
 
@@ -215,8 +232,6 @@ def train(
 
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device).float()
-            #print(x,y)
-            #print(x.shape, y.shape)
             x, y = data_pipeline_train((x, y))
             preds = model(x)
             preds = nn.functional.softmax(preds, dim=1)
@@ -250,7 +265,7 @@ def train(
         val_metric.append(epoch_val_metric)
 
     # At the end of training: Save model and training curve
-    model_saver.save_final_model(epochs, model, criterion) 
+    model_saver.save_final_model(epochs, model, optimizer, criterion) 
     model_saver.save_plots(train_loss, val_loss)
                     
 
@@ -268,6 +283,7 @@ def main():
     duration = 30 
     n_splits = 5
     test_split = 0.05
+    num_classes = 152
 
     # some hyperparameters
     bs = 16 # batch size
@@ -276,7 +292,7 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Load data 
-    with open(f'{DATA_PATH}scored_birds.json') as f:
+    with open(f'{DATA_PATH}all_birds.json') as f:
         birds = json.load(f)
 
     metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
@@ -289,7 +305,7 @@ def main():
         labels = primary_labels + secondary_labels
         return np.argwhere(labels.max(axis=1)>0).squeeze()
     ids = find_positive(full_dataset)
-    metadata = metadata.iloc[ids].reset_index()
+    #metadata = metadata.iloc[ids].reset_index()
     tts = metadata.sample(frac=test_split).index # train test split
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
@@ -314,7 +330,7 @@ def main():
 
     transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
 
-    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=21)
+    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=num_classes)
 
     data_pipeline_train = nn.Sequential(
         transforms1, 
@@ -338,7 +354,7 @@ def main():
     optimizer = Adam(model.parameters(), lr = learning_rate)
     criterion = nn.CrossEntropyLoss(weight=None, reduction='mean')
     metric = MulticlassF1Score(
-        num_classes = 21, # TODO check this
+        num_classes = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
         average='micro' # TODO Discuss that
     ) 

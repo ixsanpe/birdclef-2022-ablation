@@ -12,5 +12,5 @@ output/*
 wandb/*
 subscript.sh
 spec-file.txt
-
+subscript.sh
 scratch.py
