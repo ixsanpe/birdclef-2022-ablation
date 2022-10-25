@@ -16,6 +16,7 @@ import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
 from typing import Callable
+import warnings
 
 DATA_PATH = 'birdclef-2022/'
 
@@ -118,6 +119,9 @@ def train(
                     
 
 def collate_fn(data):
+    """
+    Define how the DataLoaders should batch the data
+    """
     max_dim = max([d[0].shape[-1] for d in data])
     pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
     return torch.stack([pad_x(d[0]) for d in data], axis=0), torch.stack([torch.tensor(d[1]) for d in data])
@@ -130,50 +134,41 @@ def main():
     n_splits = 6
 
     # some hyperparameters
-    bs = 2 # batch size
-    epochs = 2
+    bs = 8 # batch size
+    epochs = 10
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    N = -1 # number of training examples (useful for testing)
+
+    if N != -1:
+        warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
+
     # Load data 
-    with open(f'{DATA_PATH}scored_birds.json') as f:
+    with open(f'{DATA_PATH}all_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
-    # choose only samples with a positive label
-    full_dataset = SimpleDataset(metadata, DATA_PATH, mode='train', labels=birds)
-    # positive ids
-    def find_positive(dataset):
-        primary_labels = np.stack(dataset.primary_label)
-        secondary_labels = np.stack(dataset.secondary_label)
-        labels = primary_labels + secondary_labels
-        return np.argwhere(labels.max(axis=1)>0).squeeze()
-    ids = find_positive(full_dataset)
-    metadata = metadata.iloc[ids].reset_index()
-    tts = metadata.sample(frac=.05).index # train test split
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:N]
+
+    # train test split
+    tts = metadata.sample(frac=.05).index 
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
 
+    # Datasets, DataLoaders
     train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
     val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
 
     train_loader = DataLoader(train_data, batch_size=bs, num_workers=8, collate_fn=collate_fn)
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=8, collate_fn=collate_fn)
 
-    # create mode
+    # create model
+
+    # Data pipelines
     transforms1 = TransformApplier([SelectSplitData(duration, n_splits)])
 
     wav2spec = Wav2Spec()
 
     transforms2 = TransformApplier([nn.Identity()])
-
-    cnn = PretrainedModel(
-        model_name='efficientnet_b2', 
-        in_chans=1, # normally 3 for RGB-images
-    )
-
-    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
-
-    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=21)
 
     data_pipeline_train = nn.Sequential(
         transforms1, 
@@ -186,6 +181,18 @@ def main():
         wav2spec, 
     ).to(device) # Leaving out transforms2 since I think it will mostly be relevant for training
 
+    # Model Architecture
+    cnn = PretrainedModel(
+        model_name='efficientnet_b2', 
+        in_chans=1, # normally 3 for RGB-images
+    )
+
+    # Post-processing
+    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
+
+    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=len(birds))
+
+    # Model definition
     model = nn.Sequential(
         cnn,
         transforms3, 
@@ -193,6 +200,7 @@ def main():
         # transforms4
     ).to(device)
 
+    # Train the model
     optimizer = Adam(model.parameters(), )
     criterion = nn.CrossEntropyLoss()
 
@@ -206,7 +214,7 @@ def main():
         criterion, 
         epochs=epochs, 
         device=device, 
-        print_every=10, 
+        print_every=-1, 
     )
 
 if __name__ == '__main__':

@@ -118,7 +118,7 @@ class SimpleDataset(Dataset):
         Load a file and take the union of the primary and secondary labels as a label
         """
         path = f"train_audio/{self.df.loc[idx, 'filename']}"
-        label = self.primary_label[idx] + self.secondary_label[idx]
+        label = self.get_label(idx)
         
         if debug: print(path)
 
@@ -128,6 +128,9 @@ class SimpleDataset(Dataset):
         wav_tensor = torch.tensor(wav)
 
         return wav_tensor, label 
+
+    def get_label(self, idx):
+        return self.primary_label[idx] + self.secondary_label[idx]
 
     def load_one(self, id_, offset, duration):
         fp = self.data_path + id_
