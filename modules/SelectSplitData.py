@@ -8,6 +8,7 @@ class SelectSplitData(nn.Module):
         duration: int, 
         n_splits: int, 
         offset=None, 
+        sr=16000
     ):
 
         """
@@ -24,14 +25,15 @@ class SelectSplitData(nn.Module):
         self.duration = duration 
         self.n_splits = n_splits
         self.offset = offset
+        self.sr = sr
 
-    def forward(self, x, sr=16000):
+    def forward(self, x):
         if isinstance(x, tuple):
-            return self.forward_x(x[0], sr), x[1]
+            return self.forward_x(x[0]), x[1]
         else:
-            return self.forward_x(x, sr)
+            return self.forward_x(x)
     
-    def forward_x(self, x: torch.Tensor, sr=16000):
+    def forward_x(self, x: torch.Tensor):
         """
         Select for a duration and split the data. If the duration is too short, we pad with 0's
         Parameters:
@@ -42,9 +44,10 @@ class SelectSplitData(nn.Module):
         Returns:
             processed version of x with shape (n_splits, ..., x.shape[-1]//n_folds)
         """
+        sr = self.sr
         total_duration = x.shape[-1] / sr
         if total_duration < self.duration:
-            x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]))], axis=-1)
+            x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]), device = x.device)], axis=-1)
             total_duration = self.duration
         max_offset = total_duration - self.duration 
         if self.offset is None:

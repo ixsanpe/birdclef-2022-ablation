@@ -3,3 +3,14 @@ venv/*
 kaggle-birdclef2021-2nd-place/
 *.pyc
 ixeia*
+data/*
+sbatch.sh
+run_sbatch_BirdClef_train.sh
+sbatch_logs/*
+sbatch_logs/
+output/*
+wandb/*
+subscript.sh
+spec-file.txt
+subscript.sh
+scratch.py

@@ -11,3 +11,6 @@ Some Links:
 
 Dataset:
 - https://www.kaggle.com/competitions/birdclef-2022/data
+
+AUGMENTATION (Library audiomentations)
+- https://github.com/iver56/audiomentations
