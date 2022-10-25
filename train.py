@@ -16,6 +16,7 @@ import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
 from typing import Callable
+import warnings
 
 DATA_PATH = 'birdclef-2022/'
 
@@ -118,7 +119,10 @@ def train(
                     
 
 def collate_fn(data):
-    max_dim = max([d[0].shape[-1] for d in data])# 1600000
+    """
+    Define how the DataLoaders should batch the data
+    """
+    max_dim = max([d[0].shape[-1] for d in data])
     pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
     return torch.stack([pad_x(d[0]) for d in data], axis=0), torch.stack([torch.tensor(d[1]) for d in data])
      
@@ -134,15 +138,23 @@ def main():
     epochs = 2
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    N = -1 # number of training examples (useful for testing)
+
+    if N != -1:
+        warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
+
     # Load data 
     with open(f'{DATA_PATH}scored_birds.json') as f:
         birds = json.load(f)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:1000]
-    tts = metadata.sample(frac=.05).index # train test split
+    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:N]
+
+    # train test split
+    tts = metadata.sample(frac=.05).index 
     df_val = metadata.iloc[tts]
     df_train = metadata.iloc[~tts]
 
+    # Datasets, DataLoaders
     train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
     val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
 
@@ -156,15 +168,6 @@ def main():
 
     transforms2 = TransformApplier([nn.Identity()])
 
-    cnn = PretrainedModel(
-        model_name='efficientnet_b2', 
-        in_chans=1, # normally 3 for RGB-images
-    )
-
-    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
-
-    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=21)
-
     data_pipeline_train = nn.Sequential(
         transforms1, 
         wav2spec,
@@ -176,6 +179,18 @@ def main():
         wav2spec, 
     ).to(device) # Leaving out transforms2 since I think it will mostly be relevant for training
 
+    # Model Architecture
+    cnn = PretrainedModel(
+        model_name='efficientnet_b2', 
+        in_chans=1, # normally 3 for RGB-images
+    )
+
+    # Post-processing
+    transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
+
+    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=len(birds))
+
+    # Model definition
     model = nn.Sequential(
         cnn,
         transforms3, 
