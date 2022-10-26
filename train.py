@@ -20,12 +20,13 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam 
 from torchvision.utils import make_grid
 from typing import Callable
-from torchmetrics.classification import MulticlassF1Score
+from torchmetrics.classification import MulticlassF1Score, Recall
 import wandb
 import time
 import warnings
+import os 
 
-DATA_PATH = 'data/'
+DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
 
 
@@ -64,10 +65,11 @@ def validate(
         for x_v, y_v in val_loader:
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
             y_v_logits = model(x_v)
-            y_v_pred = nn.functional.sigmoid(y_v_logits)
+            y_v_pred = torch.sigmoid(y_v_logits)
             y_val_true.append(y_v)
             y_val_pred.append(y_v_pred)
-            running_val_loss += criterion(y_v_logits, y_v)
+            # running_val_loss += criterion(y_v_logits, y_v)
+            running_val_loss += criterion(y_v_pred, y_v)
         
         y_val_true = torch.cat(y_val_true).to('cpu')
         y_val_pred = torch.cat(y_val_pred).to('cpu')
@@ -75,7 +77,7 @@ def validate(
         val_loss = running_val_loss/len(val_loader)
 
         if metric != None:
-            val_score = metric(y_val_pred, y_val_true)
+            val_score = metric(y_val_pred, y_val_true.int())
         else:
             val_score= 0.
 
@@ -88,7 +90,8 @@ def print_output(
     val_metric :float=0.,
     i: int=1,
     max_i: int=1,
-    epoch :int = 0):
+    epoch :int = 0
+):
     print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tvalidation loss = {val_loss:.3f}\ttrain metric = {train_metric:.3f}\tvalidation metric = {val_metric:.3f}') 
 
 
@@ -106,7 +109,8 @@ def train(
     print_every: int=-1, 
     device: str='cpu',
     name: str="",
-    n_splits = 5
+    n_splits = 5, 
+    log_spectrogram:bool=True, 
 ):
     """
     Train the model 
@@ -140,7 +144,6 @@ def train(
     
     """
     print('###########################\nStarting Training on %s \n###########################'%(device))
-    log_spectrogram = True
     if log_spectrogram:
         wandb_spec_table = wandb.Table(columns=['Sprectrogram', 'Predicted', 'Expected'])
 
@@ -157,8 +160,9 @@ def train(
             x, y = x.to(device), y.to(device).float()
             x, y = data_pipeline_train((x, y))
             logits = model(x)
+            y_pred = torch.sigmoid(logits)
             optimizer.zero_grad()
-            loss = criterion(logits, y)
+            loss = criterion(y_pred, y)
             running_train_loss = running_train_loss + loss.item()
             loss.backward()
             optimizer.step()
@@ -210,12 +214,12 @@ def main():
     test_split = 0.05
 
     # some hyperparameters
-    bs = 16 # batch size
+    bs = 2 # batch size
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 200 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -241,7 +245,7 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=False, pin_memory=True)
 
     # create model
-    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits)])
+    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
 
     wav2spec = Wav2Spec()
 
@@ -257,7 +261,7 @@ def main():
         transforms1, 
         wav2spec, 
         transforms2
-    ).to(device) # Leaving out transforms2 since I think it will mostly be relevant for training
+    ).to(device) 
 
     # Model Architecture
     cnn = PretrainedModel(
@@ -279,29 +283,33 @@ def main():
     ).to(device)
 
     optimizer = Adam(model.parameters(), lr = learning_rate)
-    criterion = nn.CrossEntropyLoss(weight=None, reduction='mean')
+    criterion = nn.BCELoss() # nn.CrossEntropyLoss(weight=None, reduction='mean')
     metric = MulticlassF1Score(
         num_classes = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
         average='micro' # TODO Discuss that
     ) 
+    # metric = Recall( 
+    #     num_classes=num_classes, 
+    #     threshold=.5, 
+    # ) # Gives a better idea since most predictions are 0 anyways?
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
     
 
     config = {
-    "epochs": epochs,
-    "batch_size": bs,
-    "learning_rate": learning_rate,
-    "device": device,
-    "duration" : duration,
-    "n_splits" : n_splits,
-    "transforms1": transforms1,
-    "transforms2": transforms2,
-    "transforms3": transforms3,
-    "model": model,
-    "test_split" : test_split
+        "epochs": epochs,
+        "batch_size": bs,
+        "learning_rate": learning_rate,
+        "device": device,
+        "duration" : duration,
+        "n_splits" : n_splits,
+        "transforms1": transforms1,
+        "transforms2": transforms2,
+        "transforms3": transforms3,
+        "model": model,
+        "test_split" : test_split
     }
 
     wandb.init(project="Baseline", entity="ai4goodbirdclef", name=experiment_name, config=config)
