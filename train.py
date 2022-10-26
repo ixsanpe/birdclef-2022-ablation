@@ -25,6 +25,7 @@ import wandb
 import time
 import warnings
 import os 
+from audiomentations import *
 
 DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
@@ -245,7 +246,14 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=False, pin_memory=True)
 
     # create model
-    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
+    augment = Compose([
+    AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+    TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
+    PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+    Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
+    ])  #TODO play out with it
+    #transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
+    transforms1 = TransformApplier([augment]) #,sample_rate=16000])
 
     wav2spec = Wav2Spec()
 
