@@ -8,7 +8,7 @@ class SelectSplitData(nn.Module):
         duration: int, 
         n_splits: int, 
         offset=None, 
-        sr=16000,
+        sr=16000
     ):
 
         """
@@ -47,7 +47,7 @@ class SelectSplitData(nn.Module):
         sr = self.sr
         total_duration = x.shape[-1] / sr
         if total_duration < self.duration:
-            x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]))], axis=-1)
+            x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]), device = x.device)], axis=-1)
             total_duration = self.duration
         max_offset = total_duration - self.duration 
         if self.offset is None:
