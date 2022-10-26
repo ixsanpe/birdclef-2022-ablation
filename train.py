@@ -319,7 +319,7 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn)
 
     # create mode
-    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits)])
+    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=None)])
 
     wav2spec = Wav2Spec()
 

@@ -53,7 +53,7 @@ class SelectSplitData(nn.Module):
         if self.offset is None:
             offset = uniform(low=0.0, high=max_offset)
         else:
-            offset = self.offset 
+            offset = min(self.offset, max_offset)
         start = int(offset*sr)
         stop = min([int((offset + self.duration)*sr), x.shape[-1]])
         x = x[..., start:stop]
