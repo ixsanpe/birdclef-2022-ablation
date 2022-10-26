@@ -23,7 +23,6 @@ import wandb
 import time
 import warnings
 
-
 DATA_PATH = 'data/'
 OUTPUT_DIR = 'output/'
 
@@ -59,7 +58,6 @@ def wandb_log_stats(
     wandb.log({"train_loss": train_loss,
         "val_loss": val_loss,
         "val_metric" : val_metric})
-
 
 def wandb_log_spectrogram(
     model,
@@ -109,9 +107,6 @@ def wandb_log_spectrogram(
             i = i+1
         wandb.log({"predictions": wandb_spec_table})
 
-         
-
-
 def validate(
     model: nn.Module, 
     data_pipeline_val : nn.Module, 
@@ -145,10 +140,11 @@ def validate(
         running_val_loss = 0.
         for x_v, y_v in val_loader:
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
-            y_v_pred = nn.functional.softmax(model(x_v), dim=1)
+            y_v_logits = model(x_v)
+            y_v_pred = nn.functional.sigmoid(y_v_logits, dim=1)
             y_val_true.append(y_v)
             y_val_pred.append(y_v_pred)
-            running_val_loss += criterion(y_v_pred, y_v)
+            running_val_loss += criterion(y_v_logits, y_v)
         
         y_val_true = torch.cat(y_val_true).to('cpu')
         y_val_pred = torch.cat(y_val_pred).to('cpu')
@@ -234,10 +230,9 @@ def train(
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device).float()
             x, y = data_pipeline_train((x, y))
-            preds = model(x)
-            preds = nn.functional.softmax(preds, dim=1)
+            logits = model(x)
             optimizer.zero_grad()
-            loss = criterion(preds, y)
+            loss = criterion(logits, y)
             running_train_loss = running_train_loss + loss.item()
             loss.backward()
             optimizer.step()
@@ -287,7 +282,6 @@ def main():
     duration = 30 
     n_splits = 5
     test_split = 0.05
-    num_classes = 152
 
     # some hyperparameters
     bs = 16 # batch size
@@ -295,7 +289,7 @@ def main():
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 200 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -304,12 +298,14 @@ def main():
     with open(f'{DATA_PATH}all_birds.json') as f:
         birds = json.load(f)
 
+    num_classes = len(birds)
+
     metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:N]
 
     # train test split
-    tts = metadata.sample(frac=.05).index 
+    tts = metadata.sample(frac=test_split).index 
     df_val = metadata.iloc[tts]
-    df_train = metadata.iloc[~tts]
+    df_train = metadata.drop(tts)
 
     # Datasets, DataLoaders
     train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
@@ -318,7 +314,7 @@ def main():
     train_loader = DataLoader(train_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn)
 
-    # create mode
+    # create model
     transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits)])
 
     wav2spec = Wav2Spec()
@@ -346,7 +342,7 @@ def main():
     # Post-processing
     transforms3 = TransformApplier([SimpleAttention(cnn.get_out_dim()), RejoinSplitData(duration, n_splits)])
 
-    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=len(birds))
+    output_head = OutputHead(n_in=cnn.get_out_dim() * n_splits, n_out=num_classes)
 
     # Model definition
     model = nn.Sequential(
@@ -373,7 +369,7 @@ def main():
     "batch_size": bs,
     "learning_rate": learning_rate,
     "device": device,
-    "duartion" : duration,
+    "duration" : duration,
     "n_splits" : n_splits,
     "transforms1": transforms1,
     "transforms2": transforms2,
