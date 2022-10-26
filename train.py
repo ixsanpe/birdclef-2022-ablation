@@ -75,7 +75,11 @@ def validate(
         val_loss = running_val_loss/len(val_loader)
 
         if metric != None:
-            val_score = metric(y_val_pred, y_val_true)
+            try:
+                val_score = metric(y_val_pred, y_val_true)
+            except  Exception as ex:
+                print('Exception {ex} in metric')
+                val_score = 0.
         else:
             val_score= 0.
 
@@ -83,13 +87,14 @@ def validate(
 
 def print_output(
     train_loss :float = 0., 
+    current_loss: float = 0.,
     train_metric :float = 0., 
     val_loss :float = 0., 
     val_metric :float=0.,
     i: int=1,
     max_i: int=1,
     epoch :int = 0):
-    print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tvalidation loss = {val_loss:.3f}\ttrain metric = {train_metric:.3f}\tvalidation metric = {val_metric:.3f}') 
+    print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tcurrent loss = {current_loss:.3f}\tvalidation loss = {val_loss:.3f}\ttrain metric = {train_metric:.3f}\tvalidation metric = {val_metric:.3f}') 
 
 
 def train(
@@ -166,7 +171,7 @@ def train(
             
             if i % print_every == print_every-1: 
                 epoch_val_loss, epoch_val_metric = validate(model, data_pipeline_val, val_loader, device, criterion, metric)
-                print_output(running_train_loss/i, epoch_train_metric, epoch_val_loss, epoch_val_metric, i,len(train_loader), epoch)
+                print_output(running_train_loss/i, loss.item() ,  epoch_train_metric, epoch_val_loss, epoch_val_metric, i,len(train_loader), epoch)
 
 
         epoch_train_loss = running_train_loss/len(train_loader)
@@ -210,7 +215,7 @@ def main():
     test_split = 0.05
 
     # some hyperparameters
-    bs = 16 # batch size
+    bs = 8 # batch size
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
