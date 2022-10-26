@@ -75,6 +75,7 @@ def print_probability_ranking(y, n=5):
 
     return output
 
+
 def wandb_log_stats(
     train_loss: list = [], 
     val_loss: list=[], 
@@ -95,12 +96,14 @@ def wandb_log_stats(
         "val_loss": val_loss,
         "val_metric" : val_metric})
 
+
 def wandb_log_spectrogram(
     model,
     data_pipeline_val,
     val_loader,
     device, 
-    wandb_spec_table
+    wandb_spec_table,
+    n_splits
 ):
     """
     Runs model on validation set and sends the first n batches of spectrogram, label, and prediction to Weights and Biases
@@ -116,29 +119,31 @@ def wandb_log_spectrogram(
             device on which to train model
         wandb_spec_data: 
             The wandb table to save the data to
+        n_splits:
+            number of splits of 30s recordings
 
     """
     with torch.no_grad():
         # only takes the first n batches
         n = 1 # maximum amount of batches to evaluate
-        i = 0 # running index of example
-        j = 0 # running index of val_loader
-        # skip the first n images in validation loader, these have constant values due to padding
 
-        while i < n and j < len(val_loader):
-            # load file and do inference
-            # iterates over val loader until file with non-constant values is found
-            while True:
-                x_v, y_v = next(iter(val_loader))
-                j = j+1
-                if torch.var(x_v) != 0:
-                    break
-            
+        for i, (x_v,y_v) in enumerate(val_loader): 
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
             y_v_pred = model(x_v)
-
-            # iterate over all slices from chunk
-            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):
+            #print(y_v_pred.shape, x_v.shape, y_v.shape)
+            
+            for j, x_v_slice in enumerate(x_v):
+                y_v_slice, y_v_slice_pred = y_v[int(j/n_splits)], y_v_pred[int(j/n_splits)]
                 wandb_spec_table.add_data(wandb.Image(x_v_slice), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
-            i = i+1
+            if i+1 >= n:
+                break
+
+            # if we want to leverage predictions, we can do this instead:
+            """
+            for i, y_v_slice in enumerate(y_v):
+                grid_image = make_grid(x_v.unsqueeze(1)[i*n_splits:(i+1)*n_splits], nrow=1)[0,...]
+                y_v_slice = leverage(y_v_pred[i*n_splits:(i+1)*n_splits]) # leverage has to be implemented
+                wandb_spec_table.add_data(wandb.Image(grid_image), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
+            """
+
         wandb.log({"predictions": wandb_spec_table})
