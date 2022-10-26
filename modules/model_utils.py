@@ -3,6 +3,7 @@ from torch import nn
 import torch
 from torch.distributions import Beta
 from torch.nn.parameter import Parameter
+import wandb
 
 
 def gem(x, p=3, eps=1e-6):
@@ -59,3 +60,85 @@ class Mixup(nn.Module):
         else:
             weight = coeffs.view(-1) * weight + (1 - coeffs.view(-1)) * weight[perm]
             return X, Y, weight
+
+
+def print_probability_ranking(y, n=5):
+    assert n <= len(y)
+
+    y = nn.functional.sigmoid(y)
+
+    output = ""
+    sorted, indices = torch.sort(y)
+
+    for i in range(n):
+        output += "#%i   Class: %i   Prob: %.3f\n"%(i, indices[i], sorted[i])
+
+    return output
+
+def wandb_log_stats(
+    train_loss: list = [], 
+    val_loss: list=[], 
+    val_metric: list=[]
+):
+    """
+    sends the current training statistic to Weights and Biases
+    Parameters:
+        train_loss:
+            training loss, evaluated by cost function on training set
+        val_loss: 
+            validation loss, evaluated by cost function on validation set
+        val_metric: 
+            validation metric, evaluated by metric function on validation set
+    """
+
+    wandb.log({"train_loss": train_loss,
+        "val_loss": val_loss,
+        "val_metric" : val_metric})
+
+def wandb_log_spectrogram(
+    model,
+    data_pipeline_val,
+    val_loader,
+    device, 
+    wandb_spec_table
+):
+    """
+    Runs model on validation set and sends the first n batches of spectrogram, label, and prediction to Weights and Biases
+    Parameters:
+        model:
+            model for which to report progress
+        data_pipeline_val: 
+            Pre-processing pipeline of the validation data from audio signal to model input
+            data_pipeline_val should take a tuple (x, y) as an input
+        val_loader: 
+            data loader for validation data
+        device: 
+            device on which to train model
+        wandb_spec_data: 
+            The wandb table to save the data to
+
+    """
+    with torch.no_grad():
+        # only takes the first n batches
+        n = 1 # maximum amount of batches to evaluate
+        i = 0 # running index of example
+        j = 0 # running index of val_loader
+        # skip the first n images in validation loader, these have constant values due to padding
+
+        while i < n and j < len(val_loader):
+            # load file and do inference
+            # iterates over val loader until file with non-constant values is found
+            while True:
+                x_v, y_v = next(iter(val_loader))
+                j = j+1
+                if torch.var(x_v) != 0:
+                    break
+            
+            x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
+            y_v_pred = model(x_v)
+
+            # iterate over all slices from chunk
+            for x_v_slice, y_v_slice, y_v_slice_pred in zip(x_v, y_v, y_v_pred):
+                wandb_spec_table.add_data(wandb.Image(x_v_slice), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
+            i = i+1
+        wandb.log({"predictions": wandb_spec_table})
