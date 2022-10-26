@@ -18,6 +18,7 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
+from torchvision.utils import make_grid
 from typing import Callable
 from torchmetrics.classification import MulticlassF1Score
 import wandb
@@ -104,7 +105,8 @@ def train(
     epochs: int=1,
     print_every: int=-1, 
     device: str='cpu',
-    name: str=""
+    name: str="",
+    n_splits = 5
 ):
     """
     Train the model 
@@ -133,6 +135,8 @@ def train(
             how often to report progress. If print_every==-1, we print at the end of every epoch.
         device:
             device on which to train
+        n_splits:
+            the number of splits of the 30s recording. Essential becasue y_true has shape (B,C), whereas y_pred and x have shape (B*n_splits, C) and (B*n_splits, X, Y)
     
     """
     print('###########################\nStarting Training on %s \n###########################'%(device))
@@ -173,7 +177,7 @@ def train(
 
         wandb_log_stats(epoch_train_loss, epoch_val_loss, epoch_val_metric)
         if log_spectrogram:
-            wandb_log_spectrogram(model, data_pipeline_train, val_loader, device, wandb_spec_table)
+            wandb_log_spectrogram(model, data_pipeline_train, val_loader, device, wandb_spec_table, n_splits)
              
         if model_saver != None:
             model_saver.save_best_model(epoch_val_loss, epoch, model, optimizer, criterion)
@@ -315,7 +319,8 @@ def main():
         model_saver=model_saver,
         epochs=epochs, 
         device=device, 
-        print_every=10
+        print_every=10,
+        n_splits=n_splits
     )
 
 if __name__ == '__main__':
