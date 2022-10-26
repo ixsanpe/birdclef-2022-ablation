@@ -252,8 +252,8 @@ def main():
     PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
     Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
     ])  #TODO play out with it
-    #transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
-    transforms1 = TransformApplier([augment]) #,sample_rate=16000])
+    transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
+    #transforms1 = TransformApplier([augment(), SelectSplitData(duration, n_splits, offset=0)]) #,sample_rate=16000])
 
     wav2spec = Wav2Spec()
 
