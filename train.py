@@ -29,7 +29,7 @@ OUTPUT_DIR = 'output/'
 def print_probability_ranking(y, n=5):
     assert n <= len(y)
 
-    y = nn.functional.softmax(y, dim=0)
+    y = nn.functional.sigmoid(y, dim=0)
 
     output = ""
     sorted, indices = torch.sort(y)
