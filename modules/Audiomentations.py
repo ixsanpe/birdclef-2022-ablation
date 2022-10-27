@@ -1,6 +1,6 @@
 import audiomentations as am
 import torch.nn as nn 
-class Audiomentations(nn.Module):
+'''class Audiomentations(nn.Module):
     def __init__(self,
         sample_rate=32000,
         min_amplitude=0.001,
@@ -22,5 +22,15 @@ class Audiomentations(nn.Module):
         am.PitchShift(min_semitones=min_semitones, max_semitones=max_semitones, p=p_Pitch),
         am.Shift(min_fraction=min_fraction, max_fraction=max_fraction, p=p_Shift),
         ])  
+    def forward(self,x):
+        return self.augment(x,sample_rate=self.sample_rate)''''
+    
+class Audiomentations(nn.Module):
+    def __init__(self,
+                 sample_rate=32000
+                 transformations)
+        self.transformations=transformations
+        super().__init__()
+        self.augment=am.Compose(self.transformations)  
     def forward(self,x):
         return self.augment(x,sample_rate=self.sample_rate)
