@@ -11,6 +11,7 @@ from modules.SimpleAttention import *
 from modules.SelectSplitData import *
 from modules.Normalization import *
 from modules.model_utils import *
+from modules.Audiomentations import *
 from utils import ModelSaver
 
 import torch.nn as nn
@@ -250,18 +251,12 @@ def main():
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=False, pin_memory=True)
 
     # create model
-    augment = Compose([
-    AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
-    TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
-    PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
-    Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
-    ])  #TODO play out with it
     transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
-    #transforms1 = TransformApplier([augment(), SelectSplitData(duration, n_splits, offset=0)]) #,sample_rate=16000])
 
     wav2spec = Wav2Spec()
 
-    transforms2 = TransformApplier([nn.Identity(), InstanceNorm()]) 
+    #transforms2 = TransformApplier([nn.Identity(), InstanceNorm()]) 
+    transforms2 = TransformApplier([Audiomentations(), InstanceNorm()]) 
 
     data_pipeline_train = nn.Sequential(
         transforms1, 
