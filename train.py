@@ -26,7 +26,7 @@ import wandb
 import time
 import warnings
 import os 
-from audiomentations import *
+import audiomentations as am
 
 DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
@@ -256,8 +256,15 @@ def main():
     wav2spec = Wav2Spec()
 
     #transforms2 = TransformApplier([nn.Identity(), InstanceNorm()]) 
-    transforms2 = TransformApplier([Audiomentations(), InstanceNorm()]) 
+    augment=[
+    am.AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+    am.TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
+    am.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+    am.Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
+    ]
+    transforms2 = TransformApplier([Audiomentations(augment,), InstanceNorm()]) 
 
+    
     data_pipeline_train = nn.Sequential(
         transforms1, 
         wav2spec,
