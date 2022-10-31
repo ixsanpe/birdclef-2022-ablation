@@ -1,14 +1,15 @@
 import torch
 from torch import Tensor
+import torch.nn as nn
 
-class PredictionThreshold():
+class PredictionThreshold(nn.Module):
 
     def __init__(
         self,
         class_thresholds = 0.5,
         num_classes: int = 152
         ) -> None:
-        
+        super().__init__()
         self.num_classes = num_classes
 
         if isinstance(class_thresholds, float):
@@ -21,7 +22,7 @@ class PredictionThreshold():
             raise NotImplementedError('Not implemented for input type ' + str(type(class_thresholds)))
             
     def __call__(self, y_pred) -> Tensor:
-        assert (y_pred.shape[-1] == self.class_thresholds.shape[-1])
+        assert (y_pred.shape[-1] == self.class_thresholds.shape[-1]), f'y_pred does not have the correct shape: {y_pred.shape} != {self.class_thresholds.shape}'
         y_out = []
         if y_pred.dim() == 2:
             for y_slice in y_pred:
