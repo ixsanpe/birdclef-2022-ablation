@@ -12,6 +12,7 @@ from modules.SelectSplitData import *
 from modules.Normalization import *
 from modules.model_utils import *
 from modules.Audiomentations import *
+from modules.torch_Audiomentations import *
 from modules.Postprocessing import *
 
 import torch.nn as nn
@@ -26,7 +27,8 @@ import wandb
 import time
 import warnings
 import os 
-import torch_audiomentations  as am
+import torch_audiomentations  as tam
+import audiomentations as am
 
 DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
@@ -261,6 +263,14 @@ def main():
     ]
     transforms2 = TransformApplier([Audiomentations(augment), InstanceNorm()]) 
     """
+    augment = [Gain(
+            min_gain_in_db=-15.0,
+            max_gain_in_db=5.0,
+            p=0.5),
+            PolarityInversion(p=0.5)]
+        PolarityInversion(p=0.5)
+    transforms2 = TransformApplier([torch_Audiomentations(augment), InstanceNorm()])
+    #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
     
     data_pipeline_train = nn.Sequential(
         transforms1, 
