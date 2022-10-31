@@ -1,6 +1,6 @@
 import torch_audiomentations as tam
 import torch.nn as nn 
-    class torch_Audiomentations(nn.Module):
+class torch_Audiomentations(nn.Module):
     def __init__(self,
                 transformations,
                 sample_rate=32000
