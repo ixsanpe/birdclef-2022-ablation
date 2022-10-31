@@ -23,13 +23,15 @@ import torch.nn as nn
         am.Shift(min_fraction=min_fraction, max_fraction=max_fraction, p=p_Shift),
         ])  
     def forward(self,x):
-        return self.augment(x,sample_rate=self.sample_rate)''''
+        return self.augment(x,sample_rate=self.sample_rate)'''
     
 class Audiomentations(nn.Module):
     def __init__(self,
-                 sample_rate=32000
-                 transformations)
+                transformations,
+                sample_rate=32000
+                ):
         self.transformations=transformations
+        self.sample_rate=sample_rate
         super().__init__()
         self.augment=am.Compose(self.transformations)  
     def forward(self,x):

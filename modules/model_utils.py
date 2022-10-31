@@ -68,7 +68,7 @@ def print_probability_ranking(y, n=5):
     y = nn.functional.sigmoid(y)
 
     output = ""
-    sorted, indices = torch.sort(y)
+    sorted, indices = torch.sort(y, descending=True)
 
     for i in range(n):
         output += "#%i   Class: %i   Prob: %.3f\n"%(i, indices[i], sorted[i])

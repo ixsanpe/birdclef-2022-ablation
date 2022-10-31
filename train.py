@@ -1,7 +1,7 @@
 """
 Train a pipeline 
 """
-
+from torch import Tensor
 from modules.PretrainedModel import * 
 from modules.OnlyXTransform import *
 from modules.Wav2Spec import * 
@@ -12,6 +12,7 @@ from modules.SelectSplitData import *
 from modules.Normalization import *
 from modules.model_utils import *
 from modules.Audiomentations import *
+from modules.Postprocessing import *
 from utils import ModelSaver
 
 import torch.nn as nn
@@ -32,7 +33,6 @@ DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
 
 
-
 def validate(
     model: nn.Module, 
     data_pipeline_val : nn.Module, 
@@ -40,6 +40,7 @@ def validate(
     device: str, 
     criterion: Callable, 
     metric = None,
+    pred_threshold = PredictionThreshold(0.5)
 ):
     """
     print training progress of the model in terms of training and validation loss
@@ -80,7 +81,7 @@ def validate(
 
         if metric != None:
             try:
-                val_score = metric(y_val_pred, y_val_true.int())
+                val_score = metric(pred_threshold(y_val_pred), y_val_true.int())
             except  Exception as ex:
                 print('Exception {ex} in metric')
                 val_score = 0.
@@ -262,8 +263,8 @@ def main():
     am.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
     am.Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
     ]
-    transforms2 = TransformApplier([Audiomentations(augment,), InstanceNorm()]) 
-
+    #transforms2 = TransformApplier([Audiomentations(augment), InstanceNorm()]) 
+    transforms2 = TransformApplier([InstanceNorm()]) 
     
     data_pipeline_train = nn.Sequential(
         transforms1, 
