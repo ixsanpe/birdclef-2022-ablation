@@ -263,11 +263,11 @@ def main():
     ]
     transforms2 = TransformApplier([Audiomentations(augment), InstanceNorm()]) 
     """
-    augment = [Gain(
+    augment = [tam.Gain(
             min_gain_in_db=-15.0,
             max_gain_in_db=5.0,
             p=0.5),
-            PolarityInversion(p=0.5)]
+            tam.PolarityInversion(p=0.5)]
     transforms2 = TransformApplier([torch_Audiomentations(augment), InstanceNorm()])
     #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
     
