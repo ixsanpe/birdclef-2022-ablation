@@ -1,6 +1,6 @@
 import torch_audiomentations as tam
 import torch.nn as nn 
-    class Audiomentations(nn.Module):
+    class torch_Audiomentations(nn.Module):
     def __init__(self,
                 transformations,
                 sample_rate=32000
@@ -8,7 +8,7 @@ import torch.nn as nn
         self.transformations=transformations
         self.sample_rate=sample_rate
         super().__init__()
-        self.augment=am.Compose(self.transformations)  
+        self.augment=tam.Compose(self.transformations)  
 
     def forward(self, x):
         if isinstance(x, tuple):
