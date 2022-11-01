@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import json
 import numpy as np
+from decouple import config
 
 def remove_chars(s, chars=['[', ']', ' ', '\'']):
     for c in chars:
@@ -14,7 +15,7 @@ def remove_chars(s, chars=['[', ']', ' ', '\'']):
     return s
 
 def main():
-    DATA_PATH = os.getcwd() + '/data/'
+    DATA_PATH = config("DATA_PATH")
     OUTPUT_PATH = DATA_PATH
     df = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
     primary_labels = df['primary_label'].replace('[', '').replace(']', '')
