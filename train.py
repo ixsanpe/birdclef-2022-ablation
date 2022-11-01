@@ -27,7 +27,7 @@ import wandb
 import time
 import warnings
 import os 
-import torch_audiomentations  as tam
+import torch_audiomentations as tam
 import audiomentations as am
 
 DATA_PATH = os.getcwd() + '/birdclef-2022/'
@@ -251,6 +251,7 @@ def main():
 
     # create model
     transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
+
 
     wav2spec = Wav2Spec()
 
