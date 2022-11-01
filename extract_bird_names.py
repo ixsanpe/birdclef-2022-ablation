@@ -14,7 +14,7 @@ def remove_chars(s, chars=['[', ']', ' ', '\'']):
     return s
 
 def main():
-    DATA_PATH = os.getcwd() + '/birdclef-2022/'
+    DATA_PATH = os.getcwd() + '/data/'
     OUTPUT_PATH = DATA_PATH
     df = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
     primary_labels = df['primary_label'].replace('[', '').replace(']', '')

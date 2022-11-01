@@ -29,10 +29,14 @@ import warnings
 import os 
 import torch_audiomentations as tam
 import audiomentations as am
+from decouple import config
 
-DATA_PATH = os.getcwd() + '/birdclef-2022/'
-OUTPUT_DIR = 'output/'
 
+#DATA_PATH = os.getcwd() + '/birdclef-2022/'
+#OUTPUT_DIR = 'output/'
+
+DATA_PATH = config("DATA_PATH")
+OUTPUT_DIR = config("OUTPUT_DIR")
 
 def validate(
     model: nn.Module, 
