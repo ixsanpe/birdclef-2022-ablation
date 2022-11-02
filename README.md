@@ -2,6 +2,17 @@
 AI4Good project
 
 
+#### Key points for repo:
+- The path to the data and the repository is now read from environment variables which you have to create: 
+- You will need $ pip install python-decouple
+1. $ touch .env 
+2. $ nano .env 
+3. add the variables DATA_PATH and OUTPUT_DIR, in Euler they are:
+* DATA_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/
+* OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
+
+##### References:
+
 Some Links:
 
 - https://www.researchgate.net/publication/362592701_Overview_of_BirdCLEF_2022_Endangered_bird_species_recognition_in_soundscape_recordings

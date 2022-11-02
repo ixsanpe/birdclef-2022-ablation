@@ -80,36 +80,7 @@ class SelectSplitData(nn.Module):
         return d
         
 
-    '''
-    def forward_x_old(self, x: torch.Tensor, durations: torch.Tensor):
-        """
-        Select for a duration and split the data. If the duration is too short, we pad with 0's
-        Parameters:
-            x:
-                array or tensor from which to select and to split
-            durations:
-                the duration for each x so that we don't use many empty spectrograms
-        Returns:
-            processed version of x with shape (n_splits, ..., x.shape[-1]//n_folds)
-        """
-        sr = self.sr
-        
-        total_duration = x.shape[-1] / sr
-        if total_duration < self.duration:
-            x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]), device = x.device)], axis=-1)
-            total_duration = self.duration
-        max_offset = total_duration - self.duration 
-        if self.offset is None:
-            assert False 
-            offset = uniform(low=0.0, high=max_offset)
-        else:
-            offset = min(self.offset, max_offset) 
 
-        start = int(offset*sr)
-        stop = min([int((offset + self.duration)*sr), x.shape[-1]])
-        x = x[..., start:stop]
-        return x.reshape((x.shape[0]*self.n_splits, *x.shape[1:-1], -1))
-        '''
 class RejoinSplitData(SelectSplitData):
     def forward(self, x: torch.Tensor):
         """

@@ -30,11 +30,16 @@ import wandb
 import time
 import warnings
 import os 
-import torch_audiomentations  as tam
-from paths import DATA_PATH, OUTPUT_DIR
 
-LOCAL_TEST = True
-WANDB = False
+import torch_audiomentations as tam
+import audiomentations as am
+from decouple import config
+
+DATA_PATH = config("DATA_PATH")
+OUTPUT_DIR = config("OUTPUT_DIR")
+
+LOCAL_TEST = False
+WANDB = True
 
 def validate(
     model: nn.Module, 
@@ -302,6 +307,7 @@ def main():
         pin_memory=True
     )
 
+
     # create model
     transforms1 = TransformApplier(
         [ 
@@ -309,6 +315,7 @@ def main():
             # add more transforms here
         ]
     )
+
 
     wav2spec = Wav2Spec()
 
