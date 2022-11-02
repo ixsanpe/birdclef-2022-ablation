@@ -166,4 +166,5 @@ dependencies:
   - zstd=1.5.2=ha4553b6_0
   - pip:
     - pyyaml==6.0
-prefix: /scratch_net/biwidl311/lhauptmann/miniconda3/envs/BirdClef
+#prefix: /scratch_net/biwidl311/lhauptmann/miniconda3/envs/BirdClef
+#prefix: C:\Users\ixsan\anaconda3\envs\birdclef-2022

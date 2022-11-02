@@ -14,3 +14,5 @@ subscript.sh
 spec-file.txt
 subscript.sh
 scratch.py
+.idea/
+.env

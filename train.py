@@ -27,12 +27,16 @@ import wandb
 import time
 import warnings
 import os 
-import torch_audiomentations  as tam
+import torch_audiomentations as tam
 import audiomentations as am
+from decouple import config
 
-DATA_PATH = os.getcwd() + '/birdclef-2022/'
-OUTPUT_DIR = 'output/'
 
+#DATA_PATH = os.getcwd() + '/birdclef-2022/'
+#OUTPUT_DIR = 'output/'
+
+DATA_PATH = config("DATA_PATH")
+OUTPUT_DIR = config("OUTPUT_DIR")
 
 def validate(
     model: nn.Module, 
@@ -248,8 +252,10 @@ def main():
     train_loader = DataLoader(train_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_data, batch_size=bs, num_workers=4, collate_fn=collate_fn, shuffle=False, pin_memory=True)
 
+
     # create model
     transforms1 = TransformApplier([nn.Identity(), SelectSplitData(duration, n_splits, offset=0)])
+
 
     wav2spec = Wav2Spec()
 
