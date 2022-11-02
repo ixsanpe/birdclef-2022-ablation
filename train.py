@@ -1,7 +1,6 @@
 """
 Train a pipeline 
 """
-
 from modules.PretrainedModel import * 
 from modules.Wav2Spec import * 
 from modules.TransformApplier import * 
@@ -11,6 +10,9 @@ from modules.SelectSplitData import *
 from modules.Normalization import *
 from modules.model_utils import *
 from train_utils import ModelSaver, collate_fn
+from modules.Audiomentations import *
+from modules.torch_Audiomentations import *
+from modules.Postprocessing import *
 
 import torch.nn as nn
 import pandas as pd 
@@ -19,11 +21,13 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam 
 from torchvision.utils import make_grid
 from typing import Callable
-from torchmetrics.classification import MulticlassF1Score, Recall
+from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
 import wandb
 import time
 import warnings
 import os 
+import torch_audiomentations  as tam
+import audiomentations as am
 
 DATA_PATH = os.getcwd() + '/birdclef-2022/'
 OUTPUT_DIR = 'output/'
@@ -36,7 +40,8 @@ def validate(
     val_loader : DataLoader, 
     device: str, 
     criterion: Callable, 
-    metric = None,
+    metrics = None,
+    pred_threshold :Callable= PredictionThreshold(0.5)
 ):
     """
     print training progress of the model in terms of training and validation loss
@@ -56,6 +61,11 @@ def validate(
             total accumulated loss over training for this epoch
         epoch:
             current epoch for which to report progress
+        metrics:
+            dict of metrics. Form is {'name_of_metric': metric:Callable,...}
+        pred_threshold:
+            a callable. takes a input a float prediction tensor and outputs a thresholded tensor of the same shape
+        
     """
     with torch.no_grad():
         y_val_true = []
@@ -75,13 +85,18 @@ def validate(
         y_val_pred = torch.cat(y_val_pred).to('cpu')
         
         val_loss = running_val_loss/len(val_loader)
+        
+        val_scores = dict()
+        if metrics:
+            for me_name, me_func in metrics.items():
+                try:
+                    score = me_func(pred_threshold(y_val_pred), y_val_true.int())
+                except  Exception as ex:
+                    print(f'Exception {ex} in metric {me_name}')
+                    score = 0.
+                val_scores['val_' + me_name] = score
 
-        if metric != None:
-            val_score = metric(y_val_pred, y_val_true.int())
-        else:
-            val_score= 0.
-
-    return val_loss, val_score
+    return val_loss, val_scores
 
 def print_output(
     train_loss :float = 0., 
@@ -110,7 +125,7 @@ def train(
     val_loader: DataLoader, 
     optimizer: torch.optim.Optimizer, 
     criterion: Callable, 
-    metric: Callable, 
+    metrics: dict, 
     model_saver: callable=None,
     epochs: int=1,
     print_every: int=-1, 
@@ -138,8 +153,8 @@ def train(
             optimizer to train the model
         criterion:
             criterion (loss) by which to train the model
-        metric:
-            a metric for the validation
+        metrics:
+            a dict of metrics for the prediction
         epochs:
             number of epochs for which to train
         print_every:
@@ -183,9 +198,9 @@ def train(
 
         running_train_loss = 0.
         epoch_train_loss = 0.
-        epoch_train_metric = 0. # not used at the moment
+        epoch_train_metrics = None # not used at the moment
         epoch_val_loss = 0.
-        epoch_val_metric = 0.
+        epoch_val_metrics = None
 
         for i, d in enumerate(train_loader):
             
@@ -247,7 +262,7 @@ def train(
         # Track losses
         train_loss.append(epoch_train_loss)        
         val_loss.append(epoch_val_loss)
-        val_metric.append(epoch_val_metric)
+        val_metric.append(epoch_val_metrics)
 
     # At the end of training: Save model and training curve
     model_saver.save_final_model(epochs, model, optimizer, criterion) 
@@ -264,12 +279,12 @@ def main():
     test_split = 0.05
 
     # some hyperparameters
-    bs = 2 # batch size
+    bs = 8 # batch size
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 200
+    N = -1 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -318,12 +333,30 @@ def main():
 
     wav2spec = Wav2Spec()
 
+
+    """
+    augment=[ # TODO find the right augmentations from torch_audiomentations 
+    am.AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+    am.TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
+    am.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+    am.Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
+    ]
+    transforms2 = TransformApplier([Audiomentations(augment), InstanceNorm()]) 
+    """
+    augment = [tam.Gain(
+            min_gain_in_db=-15.0,
+            max_gain_in_db=5.0,
+            p=0.5),
+            tam.PolarityInversion(p=0.5)]
+
     transforms2 = TransformApplier(
         [
+            torch_Audiomentations(augment), 
             InstanceNorm()
         ]
-    ) 
-
+    )
+    #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
+    
     data_pipeline_train = nn.Sequential(
         transforms1, 
         wav2spec,
@@ -361,20 +394,31 @@ def main():
 
     optimizer = Adam(model.parameters(), lr = learning_rate)
     criterion = nn.BCELoss() # nn.CrossEntropyLoss(weight=None, reduction='mean')
+    metric_f1micro = MultilabelF1Score(
+        num_labels = num_classes, # TODO check this
+        topk = 1, # this means we say that we take the label with the highest probability for prediction
+        average='micro' # TODO Discuss that
+    ) 
 
-    # Define a scoring metric
-    # We are working on this so that we report multiple metrics instead, in order to get
-    # a more complete picture of the model performance. 
-    # metric = MulticlassF1Score(
-    #     num_classes = num_classes, # TODO check this
-    #     topk = 1, # this means we say that we take the label with the highest probability for prediction
-    #     average='micro' # TODO Discuss that
-    # ) 
-    metric = Recall( 
-        num_classes=num_classes, 
-        threshold=.5, 
+    metric_f1macro = MultilabelF1Score(
+        num_labels = num_classes, # TODO check this
+        topk = 1, # this means we say that we take the label with the highest probability for prediction
+        average='macro' # TODO Discuss that
+    ) 
+    metric_recall = MultilabelRecall( 
+        num_labels=num_classes,
+        average='macro'
     ) # Gives a better idea since most predictions are 0 anyways?
     
+
+    metric_precision = MultilabelPrecision( 
+        num_labels=num_classes,
+        average='macro'
+    ) 
+    metrics = {'F1Micro': metric_f1micro,
+                'F1Macro': metric_f1macro,
+                'Recall': metric_recall,
+                'Precision': metric_precision}
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
     
@@ -405,7 +449,7 @@ def main():
         val_loader, 
         optimizer, 
         criterion,
-        metric,
+        metrics,
         model_saver=model_saver,
         epochs=epochs, 
         device=device, 
