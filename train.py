@@ -1,5 +1,10 @@
 """
 Train a pipeline 
+
+Note that the train function is a mess right now, since we are both training and logging at the same time.
+
+We are refactoring to have a class Trainer that maintains a Logger to resolve this issue and reduce the
+amount of repeated code, but at the moment it is a work in progress. 
 """
 from modules.PretrainedModel import * 
 from modules.Wav2Spec import * 
@@ -19,7 +24,6 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchvision.utils import make_grid
 from typing import Callable
 from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
 import wandb
@@ -27,10 +31,8 @@ import time
 import warnings
 import os 
 import torch_audiomentations  as tam
-import audiomentations as am
+from paths import DATA_PATH, OUTPUT_DIR
 
-DATA_PATH = os.getcwd() + '/birdclef-2022/'
-OUTPUT_DIR = 'output/'
 LOCAL_TEST = True
 WANDB = False
 
@@ -98,24 +100,6 @@ def validate(
 
     return val_loss, val_scores
 
-def print_output(
-    train_loss :float = 0., 
-    train_metric :float = 0., 
-    val_loss :float = 0., 
-    val_metric :float=0.,
-    i: int=1,
-    max_i: int=1,
-    epoch :int = 0
-):
-    print(
-        f'epoch {epoch+1}, \
-        iteration {i}/{max_i}:\t\
-        running loss = {train_loss:.3f}\t\
-        validation loss = {val_loss:.3f}\t\
-        train metric = {train_metric:.3f}\t\
-        validation metric = {val_metric:.3f}'
-    ) 
-
 
 def train(
     model: nn.Module, 
@@ -167,13 +151,6 @@ def train(
     
     """
 
-    """
-    Note that the train function is a mess right now, since we are both training and logging at the same time.
-
-    We are refactoring to have a class Trainer that maintains a Logger to resolve this issue and reduce the
-    amount of repeated code, but at the moment it is a work in progress. 
-    """
-
     def step(model, d, optimizer, criterion, running_train_loss):
         d = data_pipeline_train(d)
         x, y = d['x'], d['y'].float()
@@ -184,7 +161,7 @@ def train(
         running_train_loss = running_train_loss + loss.item()
         loss.backward()
         optimizer.step()
-        return running_train_loss
+        return loss, running_train_loss
 
     print(f'{20*"#"}\nStarting Training on {device} \n{20*"#"}')
 
@@ -205,7 +182,7 @@ def train(
         for i, d in enumerate(train_loader):
             
             # optimization step
-            running_train_loss = step(model, d, optimizer, criterion, running_train_loss)
+            current_loss, running_train_loss = step(model, d, optimizer, criterion, running_train_loss)
             
             # reporting etc
             if i % print_every == print_every-1: 
@@ -215,11 +192,12 @@ def train(
                     val_loader, 
                     device, 
                     criterion, 
-                    metric
+                    metrics
                 )
                 print_output(
                     running_train_loss/i, 
-                    epoch_train_metric, 
+                    current_loss.item(), 
+                    epoch_train_metrics, 
                     epoch_val_loss, 
                     epoch_val_metric, 
                     i, 
@@ -237,11 +215,12 @@ def train(
                 val_loader, 
                 device, 
                 criterion, 
-                metric
+                metrics
             )
             print_output(
                 epoch_train_loss, 
-                epoch_train_metric, 
+                current_loss.item(), 
+                epoch_train_metrics, 
                 epoch_val_loss, 
                 epoch_val_metric, 
                 len(train_loader), 
@@ -276,7 +255,7 @@ def main():
     # splitting
     duration = 30 
     n_splits = 6
-    test_split = 0.05
+    test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
     bs = 8 # batch size

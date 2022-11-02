@@ -196,7 +196,7 @@ class ModelSaver:
         self.name = name
 
         if not os.path.exists(self.save_dir):
-            "Warning: Save dir %s does not exist. Trying to create dir..."%(self.save_dir)
+            warnings.warn("Warning: Save dir %s does not exist. Trying to create dir..."%(self.save_dir))
             os.mkdir(save_dir)
         
     def save_best_model(
@@ -267,15 +267,24 @@ class ModelSaver:
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
 
 def print_output(
-    train_loss :float = 0., 
-    current_loss: float = 0.,
-    train_metrics :dict = None, 
-    val_loss :float = 0., 
-    val_metrics :dict=None,
-    i: int=1,
-    max_i: int=1,
-    epoch :int = 0):
-    print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tcurrent loss = {current_loss:.3f}\tvalidation loss = {val_loss:.3f}' + print_metrics(train_metrics)+ print_metrics(val_metrics)) 
+        train_loss :float = 0., 
+        current_loss: float = 0.,
+        train_metrics :dict = None, 
+        val_loss :float = 0., 
+        val_metrics :dict=None,
+        i: int=1,
+        max_i: int=1,
+        epoch :int = 0
+    ):
+    print(f'''
+        epoch {epoch+1}, 
+        iteration {i}/{max_i}:\t
+        running loss = {train_loss:.3f}\t
+        current loss = {current_loss:.3f}\t
+        validation loss = {val_loss:.3f} 
+        {print_metrics(train_metrics)}
+        {print_metrics(val_metrics)}
+    ''') 
 
 
 def print_metrics(
