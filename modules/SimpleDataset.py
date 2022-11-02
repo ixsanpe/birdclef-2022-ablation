@@ -1,3 +1,10 @@
+"""
+Dataset without many fancy features
+
+Heavily based on Henkel et. al.
+https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+"""
+
 import torch 
 from torch.utils.data import DataLoader, Dataset
 import librosa 

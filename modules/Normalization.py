@@ -7,13 +7,7 @@ class InstanceNorm(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, x):
-        if isinstance(x, tuple):
-            return self.forward_x(x[0]), x[1]
-        else:
-            return self.forward_x(x)
-
-    def forward_x(self, x: torch.Tensor):
+    def forward(self, x: dict):
         """
         Select for a duration and split the data. If the duration is too short, we pad with 0's
         Parameters:
@@ -23,4 +17,5 @@ class InstanceNorm(nn.Module):
             processed version of x with shape (n_splits, ..., x.shape[-1]//n_folds)
         """
         instance_norm = nn.InstanceNorm2d(1)
-        return instance_norm(x)
+        x['x'] = instance_norm(x['x'])
+        return x

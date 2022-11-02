@@ -1,16 +1,30 @@
+"""
+util functions for training. Currently a bit messy, we are working on refacoring the logging stuff into a separate class. 
+"""
+
+
 from torch.nn import functional as F
 from torch import nn
 import torch
 from torch.distributions import Beta
 from torch.nn.parameter import Parameter
 import wandb
+import warnings
 
 
 def gem(x, p=3, eps=1e-6):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1.0 / p)
 
 
 class GeM(nn.Module):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(self, p=3, eps=1e-6):
         super(GeM, self).__init__()
         self.p = Parameter(torch.ones(1) * p)
@@ -34,6 +48,10 @@ class GeM(nn.Module):
 
 
 class Mixup(nn.Module):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(self, mix_beta):
 
         super(Mixup, self).__init__()
@@ -64,11 +82,9 @@ class Mixup(nn.Module):
 
 def print_probability_ranking(y, n=5):
     assert n <= len(y)
-
-    y = nn.functional.sigmoid(y)
-
+    if any(y>1 or y<1): warnings.warn(f'WARNING! Got invalid range for y! \n{y.max()=}, \n{y.min()=}')
     output = ""
-    sorted, indices = torch.sort(y)
+    sorted, indices = torch.sort(y, descending=True)
 
     for i in range(n):
         output += "#%i   Class: %i   Prob: %.3f\n"%(i, indices[i], sorted[i])
@@ -127,9 +143,11 @@ def wandb_log_spectrogram(
         # only takes the first n batches
         n = 1 # maximum amount of batches to evaluate
 
-        for i, (x_v,y_v) in enumerate(val_loader): 
-            x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
-            y_v_pred = model(x_v)
+        for i, d_v in enumerate(val_loader): 
+            d_v = data_pipeline_val(d_v)
+            x_v, y_v = d_v['x'], d_v['y']
+            y_v_logits = model(x_v)
+            y_v_pred = torch.sigmoid(y_v_logits)
             #print(y_v_pred.shape, x_v.shape, y_v.shape)
             
             for j, x_v_slice in enumerate(x_v):

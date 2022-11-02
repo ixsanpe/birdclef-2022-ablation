@@ -1,3 +1,7 @@
+"""
+Utility functions and classes for training
+"""
+
 import torch
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
@@ -86,3 +90,28 @@ class ModelSaver:
             plt.ylabel('Accuracy')
             plt.legend()
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
+
+
+def collate_fn(data: tuple, device: str):
+    """
+    Define how the DataLoaders should batch the data
+
+    Here, we pad x and return a dict with x, y, and len, indicating what the 
+    duration of the original x was, as this is not visible after padding but useful to know.
+
+    Parameters:
+        data:
+            tuple such that data[0] is the audio signal to be processed and data[1] is the corresponding label
+        device:
+            'cpu' or 'cuda'; the device on which to train
+    
+    Returns:
+        a dict of the padded input 'x', the label 'y' and the lengths 'lens' of the original input
+        Every item in the dict is a torch.Tensor
+    """
+    max_dim = max([d[0].shape[-1] for d in data])
+    pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
+    x = torch.stack([pad_x(d[0]) for d in data], axis=0)
+    y = torch.stack([torch.tensor(d[1]) for d in data])
+    lens = [d[0].shape[-1] for d in data]
+    return {'x': x.to(device), 'y': y.to(device), 'lens': torch.tensor(lens)}

@@ -1,6 +1,5 @@
-import torch.nn as nn 
-from numpy.random import uniform
 import torch
+from torch import nn
 
 class SelectSplitData(nn.Module):
     def __init__(
@@ -20,6 +19,8 @@ class SelectSplitData(nn.Module):
                 number of splits to make 
             offset:
                 when to start loading. If None, we choose a random offset each time
+            sr:
+                sampling rate of loaded data
         """  
         super().__init__()
         self.duration = duration 
@@ -27,41 +28,88 @@ class SelectSplitData(nn.Module):
         self.offset = offset
         self.sr = sr
 
-    def forward(self, x):
-        if isinstance(x, tuple):
-            return self.forward_x(x[0]), x[1]
+    def handle_shape(self, x: torch.Tensor):
+        """
+        pad x to compatible length with respect to self.duration, self.sr
+        """
+        if x.shape[-1] < self.sr * self.duration: 
+            missing = torch.zeros((*x.shape[:-1], self.sr * self.duration - x.shape[-1]))
+            x = torch.concat([x, missing], axis=-1)
+        return x
+
+    def get_intervals(self, durations):
+        # for each sample calculate the maximum allowed offset
+        max_offset = durations - self.duration * self.sr 
+        max_offset = torch.where(max_offset > 0, max_offset, 0)
+
+        # select an offset (randomly or self.offset)
+        if self.offset is None:
+            offset = torch.rand(durations.shape) * max_offset 
         else:
-            return self.forward_x(x)
+            offset = torch.where(max_offset < self.offset, max_offset, self.offset)
+        
+        # select that data
+        start = offset.int()
+        stop = start + self.duration * self.sr
+        return start, stop 
     
-    def forward_x(self, x: torch.Tensor):
+    def forward(self, d: dict):
         """
         Select for a duration and split the data. If the duration is too short, we pad with 0's
         Parameters:
             x:
                 array or tensor from which to select and to split
-            sr:
-                sampling rate at which x was recorded
+            durations:
+                the duration for each x so that we don't use many empty spectrograms
+        Returns:
+            processed version of x with shape (x.shape[0] * n_splits, ..., x.shape[-1]//n_folds)
+        """
+        # ensure input has at last the correct duration
+        x = d['x']
+        x = self.handle_shape(x)
+
+        # select which data to pick
+        durations = d['lens']
+        start, stop = self.get_intervals(durations)
+
+        # select that data
+        waveform = torch.stack([x[idx, ..., i:j] for idx, (i,j) in enumerate(zip(start, stop))], axis=0)
+
+        # return the reshaped data
+        d['x'] = waveform.reshape((waveform.shape[0]*self.n_splits, *waveform.shape[1:-1], -1))
+        return d
+        
+
+    '''
+    def forward_x_old(self, x: torch.Tensor, durations: torch.Tensor):
+        """
+        Select for a duration and split the data. If the duration is too short, we pad with 0's
+        Parameters:
+            x:
+                array or tensor from which to select and to split
+            durations:
+                the duration for each x so that we don't use many empty spectrograms
         Returns:
             processed version of x with shape (n_splits, ..., x.shape[-1]//n_folds)
         """
         sr = self.sr
+        
         total_duration = x.shape[-1] / sr
         if total_duration < self.duration:
             x = torch.concat([x, torch.zeros((*x.shape[:-1], self.duration * sr - x.shape[-1]), device = x.device)], axis=-1)
             total_duration = self.duration
         max_offset = total_duration - self.duration 
         if self.offset is None:
+            assert False 
             offset = uniform(low=0.0, high=max_offset)
         else:
-            offset = self.offset 
+            offset = min(self.offset, max_offset) 
+
         start = int(offset*sr)
         stop = min([int((offset + self.duration)*sr), x.shape[-1]])
         x = x[..., start:stop]
-        # x = x.reshape((1, *x.shape))
-
-        # return x.reshape((self.n_splits, *x.shape[1:-1], -1))
         return x.reshape((x.shape[0]*self.n_splits, *x.shape[1:-1], -1))
-
+        '''
 class RejoinSplitData(SelectSplitData):
     def forward(self, x: torch.Tensor):
         """
