@@ -114,4 +114,4 @@ def collate_fn(data: tuple, device: str):
     x = torch.stack([pad_x(d[0]) for d in data], axis=0)
     y = torch.stack([torch.tensor(d[1]) for d in data])
     lens = [d[0].shape[-1] for d in data]
-    return {'x': x.to(device), 'y': y.to(device), 'lens': torch.tensor(lens)}
+    return {'x': x, 'y': y, 'lens': torch.tensor(lens)}

@@ -41,6 +41,8 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 LOCAL_TEST = False
 WANDB = True
 
+
+
 def validate(
     model: nn.Module, 
     data_pipeline_val : nn.Module, 
@@ -78,7 +80,9 @@ def validate(
         y_val_true = []
         y_val_pred = []
         running_val_loss = 0.
+        
         for d_v in val_loader:
+            d = to_device(d, device)
             d_v = data_pipeline_val(d_v)
             x_v, y_v = d_v['x'], d_v['y'].float()
             y_v_logits = model(x_v)
@@ -157,6 +161,7 @@ def train(
     """
 
     def step(model, d, optimizer, criterion, running_train_loss):
+        d = to_device(d, device)
         d = data_pipeline_train(d)
         x, y = d['x'], d['y'].float()
         logits = model(x)
