@@ -2,10 +2,10 @@
 This script shows how to make a very simple model using the modules in this directory.
 """
 
-from modules.PretrainedModel import * 
-from modules.SimpleDataset import * 
+from modules.modelling.PretrainedModel import * 
+from modules.data.SimpleDataset import * 
 from modules.TransformApplier import * 
-from modules.Wav2Spec import *
+from modules.preprocessing.Wav2Spec import *
 
 def main():
     transforms1 = TransformApplier([nn.Identity()])
