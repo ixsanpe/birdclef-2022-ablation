@@ -92,7 +92,7 @@ class ModelSaver:
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
 
 
-def collate_fn(data: tuple, device: str):
+def collate_fn(data: tuple):
     """
     Define how the DataLoaders should batch the data
 

@@ -17,13 +17,12 @@ import time
 import warnings
 
 import torch_audiomentations as tam
-import audiomentations as am
 from decouple import config
 
 DATA_PATH = config("DATA_PATH")
 OUTPUT_DIR = config("OUTPUT_DIR")
 
-LOCAL_TEST = True
+LOCAL_TEST = False
 WANDB = True
 
 def main():
@@ -35,12 +34,12 @@ def main():
     test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 3 # batch size
+    bs = 8 # batch size
     epochs = 300
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 50 # number of training examples (useful for testing)
+    N = -1 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -66,7 +65,7 @@ def main():
         train_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=lambda d: collate_fn(d, device), 
+        collate_fn=collate_fn, # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
     )
@@ -74,7 +73,7 @@ def main():
         val_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=lambda d: collate_fn(d, device), 
+        collate_fn=collate_fn, # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
     )
@@ -91,15 +90,17 @@ def main():
 
     wav2spec = Wav2Spec()
 
-    augment = [tam.Gain(
+    augment = [
+            tam.Gain(
             min_gain_in_db=-15.0,
             max_gain_in_db=5.0,
             p=0.5),
-            tam.PolarityInversion(p=0.5)]
+            tam.PolarityInversion(p=0.5)
+        ]
 
     transforms2 = TransformApplier(
         [
-            torch_Audiomentations(augment), 
+            # torch_Audiomentations(augment), 
             InstanceNorm()
         ]
     )
@@ -141,7 +142,9 @@ def main():
     ).to(device)
 
     optimizer = Adam(model.parameters(), lr = learning_rate)
+
     criterion = nn.BCELoss() 
+
     metric_f1micro = MultilabelF1Score(
         num_labels = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction

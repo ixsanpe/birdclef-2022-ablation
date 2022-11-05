@@ -104,7 +104,7 @@ class Trainer(nn.Module):
 
                 # reporting etc
                 if i % validate_every == validate_every-1: 
-                    epoch_logger.train_report(len(val_loader))
+                    epoch_logger.train_report(i)
                     self.validate(epoch_logger, val_loader, i)
 
             if validate_every == -1 or i < validate_every + 1:
