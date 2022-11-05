@@ -18,6 +18,7 @@ from train_utils import ModelSaver, collate_fn
 from modules.Audiomentations import *
 from modules.torch_Audiomentations import *
 from modules.Postprocessing import *
+from Trainer import Trainer, Metric 
 
 import torch.nn as nn
 import pandas as pd 
@@ -29,7 +30,6 @@ from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, Mul
 import wandb
 import time
 import warnings
-import os 
 
 import torch_audiomentations as tam
 import audiomentations as am
@@ -38,10 +38,14 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 OUTPUT_DIR = config("OUTPUT_DIR")
 
-LOCAL_TEST = False
+LOCAL_TEST = True
 WANDB = True
 
-
+def to_device(d: dict, device):
+    for k, v in d.items():
+        if isinstance(v, torch.Tensor):
+            d[k] = v.to(device)
+    return d
 
 def validate(
     model: nn.Module, 
@@ -82,7 +86,7 @@ def validate(
         running_val_loss = 0.
         
         for d_v in val_loader:
-            d = to_device(d, device)
+            d_v = to_device(d_v, device)
             d_v = data_pipeline_val(d_v)
             x_v, y_v = d_v['x'], d_v['y'].float()
             y_v_logits = model(x_v)
@@ -108,7 +112,6 @@ def validate(
                 val_scores['val_' + me_name] = score
 
     return val_loss, val_scores
-
 
 def train(
     model: nn.Module, 
@@ -259,7 +262,6 @@ def train(
      
 
 def main():
-    print('Starting the training...')
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
     # for pre-processing
     # splitting
@@ -268,12 +270,12 @@ def main():
     test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 8 # batch size
+    bs = 2 # batch size
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 50 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -324,16 +326,6 @@ def main():
 
     wav2spec = Wav2Spec()
 
-
-    """
-    augment=[ # TODO find the right augmentations from torch_audiomentations 
-    am.AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
-    am.TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
-    am.PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
-    am.Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
-    ]
-    transforms2 = TransformApplier([Audiomentations(augment), InstanceNorm()]) 
-    """
     augment = [tam.Gain(
             min_gain_in_db=-15.0,
             max_gain_in_db=5.0,
@@ -412,6 +404,10 @@ def main():
                 'Precision': metric_precision}
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
+    metrics = [
+        Metric(name, method) for name, method in metrics.items()
+    ]
+
     
 
     config = {
@@ -432,21 +428,46 @@ def main():
         wandb.init(project="Baseline", entity="ai4goodbirdclef", name=experiment_name, config=config)
         wandb.watch(model)
 
-    train(
-        model, 
-        data_pipeline_train,
-        data_pipeline_val,  
+    trainer = Trainer(
+        model=model, 
+        data_pipeline_train=data_pipeline_train, 
+        data_pipeline_val=data_pipeline_val, 
+        model_saver=model_saver,
+        criterion=criterion, 
+        optimizer=optimizer, 
+        device=device, 
+        metrics=metrics, 
+        validate_every=10, 
+        use_wandb=WANDB, 
+        wandb_args={
+            'columns': ['Predicted', 'Expected'], 
+            'project_name': 'Baseline', 
+            'experiment_name': experiment_name, 
+            'config': config, 
+        }
+    )
+    
+    trainer.train(
         train_loader, 
         val_loader, 
-        optimizer, 
-        criterion,
-        metrics,
-        model_saver=model_saver,
-        epochs=epochs, 
-        device=device, 
-        print_every=10,
-        n_splits=n_splits, 
+        epochs=epochs
     )
+
+    # train(
+    #     model, 
+    #     data_pipeline_train,
+    #     data_pipeline_val,  
+    #     train_loader, 
+    #     val_loader, 
+    #     optimizer, 
+    #     criterion,
+    #     metrics,
+    #     model_saver=model_saver,
+    #     epochs=epochs, 
+    #     device=device, 
+    #     print_every=10,
+    #     n_splits=n_splits, 
+    # )
 
 if __name__ == '__main__':
     main()

@@ -84,8 +84,11 @@ class Mixup(nn.Module):
 
 
 def print_probability_ranking(y, n=5):
+    # sanity checks
     assert n <= len(y)
-    if any(y>1 or y<1): warnings.warn(f'WARNING! Got invalid range for y! \n{y.max()=}, \n{y.min()=}')
+    if isinstance(y, torch.Tensor) and torch.any(torch.logical_or(y>1, y<0)): 
+        warnings.warn(f'WARNING! Got invalid range for y! \n{y.max()=}, \n{y.min()=}')
+
     output = ""
     sorted, indices = torch.sort(y, descending=True)
 
@@ -120,7 +123,8 @@ def wandb_log_stats(
             val_metrics_new[key].append(object)
     # transform list of dict to dict of list
     """
-    log_dict = {"train_loss": train_loss,
+    log_dict = {
+        "train_loss": train_loss,
         "val_loss": val_loss
         }
     log_dict.update(val_metrics)
