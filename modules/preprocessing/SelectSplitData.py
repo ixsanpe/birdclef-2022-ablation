@@ -44,7 +44,7 @@ class SelectSplitData(nn.Module):
 
         # select an offset (randomly or self.offset)
         if self.offset is None:
-            offset = torch.rand(durations.shape) * max_offset 
+            offset = torch.rand(durations.shape, device=max_offset.device) * max_offset 
         else:
             offset = torch.where(max_offset < self.offset, max_offset, self.offset)
         
