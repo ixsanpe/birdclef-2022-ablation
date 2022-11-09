@@ -79,13 +79,14 @@ def validate(
             x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
             y_v_logits = model(x_v)
             y_v_pred = torch.sigmoid(y_v_logits)
-            y_val_true.append(y_v)
-            y_val_pred.append(y_v_pred)
-            # running_val_loss += criterion(y_v_logits, y_v)
-            running_val_loss += criterion(y_v_pred, y_v)
+            val_loss = criterion(y_v_pred, y_v)
+            running_val_loss = running_val_loss + val_loss.item()
+            y_val_true.append(y_v.to('cpu'))
+            y_val_pred.append(y_v_pred.to('cpu'))
+
         
-        y_val_true = torch.cat(y_val_true).to('cpu')
-        y_val_pred = torch.cat(y_val_pred).to('cpu')
+        y_val_true = torch.cat(y_val_true)
+        y_val_pred = torch.cat(y_val_pred)
         
         val_loss = running_val_loss/len(val_loader)
         
@@ -223,11 +224,11 @@ def main():
 
     # some hyperparameters
     bs = 8 # batch size
-    epochs = 300
+    epochs = 1
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 200 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
