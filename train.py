@@ -25,6 +25,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 LOCAL_TEST = True
 WANDB = False
 
+
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
     # for pre-processing
@@ -35,6 +36,7 @@ def main():
 
     # some hyperparameters
     bs = 8 # batch size
+
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -156,23 +158,23 @@ def main():
         num_labels = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
         average='micro' # TODO Discuss that
-    ) 
+    ).to(device) 
 
     metric_f1macro = MultilabelF1Score(
         num_labels = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
         average='macro' # TODO Discuss that
-    ) 
+    ).to(device) 
     metric_recall = MultilabelRecall( 
         num_labels=num_classes,
         average='macro'
-    ) # Gives a better idea since most predictions are 0 anyways?
+    ).to(device)  # Gives a better idea since most predictions are 0 anyways?
     
 
     metric_precision = MultilabelPrecision( 
         num_labels=num_classes,
         average='macro'
-    ) 
+    ).to(device)  
 
     metrics = {'F1Micro': metric_f1micro,
                 'F1Macro': metric_f1macro,

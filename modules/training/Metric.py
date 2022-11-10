@@ -7,7 +7,7 @@ class Metric():
         """
         super().__init__()
         self.name = name 
-        self.metric = metric 
+        self.metric = metric
     
     def __call__(self, x, y):
         return self.metric(x, y)
