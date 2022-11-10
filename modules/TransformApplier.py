@@ -17,3 +17,6 @@ class TransformApplier(nn.Module):
     
     def forward(self, x):
         return self.transforms(x)
+    
+    def __getitem__(self, idx):
+        return list(self.transforms)[idx]

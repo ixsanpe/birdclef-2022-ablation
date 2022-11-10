@@ -22,8 +22,8 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 OUTPUT_DIR = config("OUTPUT_DIR")
 
-LOCAL_TEST = False
-WANDB = True
+LOCAL_TEST = True
+WANDB = False
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -36,10 +36,10 @@ def main():
     # some hyperparameters
     bs = 8 # batch size
     epochs = 300
-    learning_rate = 1e-4
+    learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 100 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -80,9 +80,16 @@ def main():
 
 
     # create model
-    transforms1 = TransformApplier(
+    transforms1_train = TransformApplier(
         [ 
             SelectSplitData(duration, n_splits, offset=None), 
+            # add more transforms here
+        ]
+    )
+
+    transforms1_val = TransformApplier(
+        [ 
+            SelectSplitData(duration, n_splits, offset=0.), 
             # add more transforms here
         ]
     )
@@ -107,13 +114,13 @@ def main():
     #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
     
     data_pipeline_train = nn.Sequential(
-        transforms1, 
+        transforms1_train, 
         wav2spec,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
-        transforms1, 
+        transforms1_val, 
         wav2spec, 
         transforms2
     ).to(device) 
@@ -173,6 +180,9 @@ def main():
                 'Precision': metric_precision}
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
+    overlap = .3
+    validator = Validator(data_pipeline_val, model, overlap=overlap)
+
     metrics = [
         Metric(name, method) for name, method in metrics.items()
     ]
@@ -186,7 +196,9 @@ def main():
         "device": device,
         "duration" : duration,
         "n_splits" : n_splits,
-        "transforms1": transforms1,
+        "overlap": overlap, 
+        "transforms1_train": transforms1_train,
+        "transforms1_val": transforms1_val,
         "transforms2": transforms2,
         "transforms3": transforms3,
         "model": model,
@@ -198,6 +210,7 @@ def main():
         data_pipeline_train=data_pipeline_train, 
         data_pipeline_val=data_pipeline_val, 
         model_saver=model_saver,
+        validator=validator,
         criterion=criterion, 
         optimizer=optimizer, 
         device=device, 
