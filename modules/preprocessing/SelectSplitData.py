@@ -34,7 +34,7 @@ class SelectSplitData(nn.Module):
         """
         if x.shape[-1] < self.sr * self.duration: 
             missing = torch.zeros((*x.shape[:-1], self.sr * self.duration - x.shape[-1]))
-            x = torch.concat([x, missing], axis=-1)
+            x = torch.concat([x, missing], axis=-1).to(device)
         return x
 
     def get_intervals(self, durations):
@@ -46,7 +46,7 @@ class SelectSplitData(nn.Module):
         if self.offset is None:
             offset = torch.rand(durations.shape, device=max_offset.device) * max_offset 
         else:
-            offset = torch.where(max_offset < self.offset, max_offset, self.offset)
+            offset = torch.where(max_offset < self.offset, max_offset, self.offset).to(device)
         
         # select that data
         start = offset.int()
