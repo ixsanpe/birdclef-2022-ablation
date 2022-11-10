@@ -22,8 +22,10 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 OUTPUT_DIR = config("OUTPUT_DIR")
 
+
 LOCAL_TEST = False
 WANDB = True
+
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -35,11 +37,13 @@ def main():
 
     # some hyperparameters
     bs = 8 # batch size
+
     epochs = 300
     learning_rate = 1e-4
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 200 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
