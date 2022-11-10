@@ -2,6 +2,12 @@ import torch.nn as nn
 import torchaudio as ta 
 
 class Wav2Spec(nn.Module):
+    """
+    Transform an audio (wav) signal to a Mel spectrogram. Using the settings of Henkel et. al. as a default
+
+    Code heavily based on Henkel et. al.
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(
         self, 
         sample_rate=32000,
@@ -33,8 +39,8 @@ class Wav2Spec(nn.Module):
         self.amplitude_to_db = ta.transforms.AmplitudeToDB(top_db=top_db)
         self.wav2img = nn.Sequential(self.mel_spec, self.amplitude_to_db)
     
-    def forward(self, x):
-        if isinstance(x, tuple):
-            return (self.wav2img(x[0]), x[1])
-        else:
-            return self.wav2img(x) 
+    def forward(self, d: dict):
+        to_transform = d['x']
+        transformed = self.wav2img(to_transform)
+        d['x'] = transformed 
+        return d 

@@ -3,13 +3,32 @@ from torch import nn
 import torch 
 
 class PretrainedModel(nn.Module):
+    """
+    Load a pretrained model from timm by specifying a model name, whether to use the
+    pretrained or randomly initialized version, what sort of pooling to use and the number
+    of in_channels
+
+    Adapted form from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(
         self, 
-        model_name, 
-        pretrained=True, 
-        global_pool='',
+        model_name: str, 
+        pretrained: bool=True, 
+        global_pool: str='',
         in_chans=None, 
     ):
+        """
+        Parameters:
+            model_name:
+                the model name of the desired timm model
+            pretrained:
+                Whether to load the pretrained model or randomly initialize parameters
+            global_pool:
+                parameter in timm.create_model
+            in_chans:
+                None or int. If specified it is passed to the initialized model 'model_name'
+        """
         super().__init__()
 
         self.backbone = timm.create_model(
@@ -31,18 +50,6 @@ class PretrainedModel(nn.Module):
         return self.backbone_out
 
     def forward(self, x: torch.Tensor):
-        # while x.dim() < 3:
-        #     x = x.unsqueeze(-2)
-        # x = x.swapaxes(-1, -2)
-        # x = x.unsqueeze(-3) # add extra dimension
-        # if x.dim() > 4:
-        #     original_shape = x.shape
-        #     x = x.reshape(-1, *x.shape[2:])
-        #     x = self.bn0(x)
-        #     x = x.reshape(original_shape)
-        # else:
-        #     x = self.bn0(x)
-
         x = x.swapaxes(-1, -2)
         x = x.unsqueeze(-3) # add appropriate channel; (bs, channels=1, )
 
@@ -53,11 +60,15 @@ class PretrainedModel(nn.Module):
         return x
 
 class OutputHead(nn.Module):
+    """
+    It is useful to split this part from the model itself in case we want to do some 
+    post-processing on the model outputs before making predictions
+    """
     def __init__(
         self, 
-        n_in, 
-        n_out, 
-        activation=nn.Sigmoid()
+        n_in: int, 
+        n_out: int, 
+        activation: callable=nn.Sigmoid()
     ):
         super().__init__()
         self.layer = nn.Linear(n_in, n_out)

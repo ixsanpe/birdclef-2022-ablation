@@ -10,11 +10,7 @@ class torch_Audiomentations(nn.Module):
         super().__init__()
         self.augment=tam.Compose(self.transformations)  
 
-    def forward(self, x):
-        if isinstance(x, tuple):
-            return self.forward_x(x[0]), x[1]
-        else:
-            return self.forward_x(x)
+    def forward(self, d: dict):
+        d['x'] = self.augment(d['x'], sample_rate=self.sample_rate)
+        return d 
 
-    def forward_x(self,x):
-        return self.augment(x,sample_rate=self.sample_rate)

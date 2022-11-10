@@ -1,19 +1,33 @@
+"""
+util functions for training. Currently a bit messy, we are working on refacoring the logging stuff into a separate class. 
+"""
+
+
 from torch.nn import functional as F
 from torch import nn
 import torch
 from torch.distributions import Beta
 from torch.nn.parameter import Parameter
 import wandb
+import warnings
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 import os
 
 
 def gem(x, p=3, eps=1e-6):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1.0 / p)
 
 
 class GeM(nn.Module):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(self, p=3, eps=1e-6):
         super(GeM, self).__init__()
         self.p = Parameter(torch.ones(1) * p)
@@ -37,6 +51,10 @@ class GeM(nn.Module):
 
 
 class Mixup(nn.Module):
+    """
+    Taken from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
+    """
     def __init__(self, mix_beta):
 
         super(Mixup, self).__init__()
@@ -66,9 +84,10 @@ class Mixup(nn.Module):
 
 
 def print_probability_ranking(y, n=5):
+    # sanity checks
     assert n <= len(y)
-
-    y = nn.functional.sigmoid(y)
+    if isinstance(y, torch.Tensor) and torch.any(torch.logical_or(y>1, y<0)): 
+        warnings.warn(f'WARNING! Got invalid range for y! \n{y.max()=}, \n{y.min()=}')
 
     output = ""
     sorted, indices = torch.sort(y, descending=True)
@@ -104,7 +123,8 @@ def wandb_log_stats(
             val_metrics_new[key].append(object)
     # transform list of dict to dict of list
     """
-    log_dict = {"train_loss": train_loss,
+    log_dict = {
+        "train_loss": train_loss,
         "val_loss": val_loss
         }
     log_dict.update(val_metrics)
@@ -141,9 +161,11 @@ def wandb_log_spectrogram(
         # only takes the first n batches
         n = 1 # maximum amount of batches to evaluate
 
-        for i, (x_v,y_v) in enumerate(val_loader): 
-            x_v, y_v = data_pipeline_val((x_v.to(device), y_v.to(device).float()))
-            y_v_pred = model(x_v)
+        for i, d_v in enumerate(val_loader): 
+            d_v = data_pipeline_val(d_v)
+            x_v, y_v = d_v['x'], d_v['y']
+            y_v_logits = model(x_v)
+            y_v_pred = torch.sigmoid(y_v_logits)
             #print(y_v_pred.shape, x_v.shape, y_v.shape)
             
             for j, x_v_slice in enumerate(x_v):
@@ -178,7 +200,7 @@ class ModelSaver:
         self.name = name
 
         if not os.path.exists(self.save_dir):
-            "Warning: Save dir %s does not exist. Trying to create dir..."%(self.save_dir)
+            warnings.warn("Warning: Save dir %s does not exist. Trying to create dir..."%(self.save_dir))
             os.mkdir(save_dir)
         
     def save_best_model(
@@ -249,15 +271,24 @@ class ModelSaver:
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
 
 def print_output(
-    train_loss :float = 0., 
-    current_loss: float = 0.,
-    train_metrics :dict = None, 
-    val_loss :float = 0., 
-    val_metrics :dict=None,
-    i: int=1,
-    max_i: int=1,
-    epoch :int = 0):
-    print(f'epoch {epoch+1}, iteration {i}/{max_i}:\trunning loss = {train_loss:.3f}\tcurrent loss = {current_loss:.3f}\tvalidation loss = {val_loss:.3f}' + print_metrics(train_metrics)+ print_metrics(val_metrics)) 
+        train_loss :float = 0., 
+        current_loss: float = 0.,
+        train_metrics :dict = None, 
+        val_loss :float = 0., 
+        val_metrics :dict=None,
+        i: int=1,
+        max_i: int=1,
+        epoch :int = 0
+    ):
+    print(f'''
+        epoch {epoch+1}, 
+        iteration {i}/{max_i}:\t
+        running loss = {train_loss:.3f}\t
+        current loss = {current_loss:.3f}\t
+        validation loss = {val_loss:.3f} 
+        {print_metrics(train_metrics)}
+        {print_metrics(val_metrics)}
+    ''') 
 
 
 def print_metrics(

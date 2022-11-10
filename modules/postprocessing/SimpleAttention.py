@@ -4,6 +4,9 @@ import torch
 class SimpleAttention(nn.Module):
     """
     Example post-processing step
+
+    Adapted from from Henkel et. al. 
+    https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
     """
     def __init__(self, n_in, width=512, n_out=1):
         super().__init__()
