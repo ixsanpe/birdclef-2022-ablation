@@ -122,6 +122,7 @@ def main():
         transforms2
     ).to(device) 
 
+
     # Model Architecture
     cnn = PretrainedModel(
         model_name='efficientnet_b2', 
