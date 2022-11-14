@@ -24,8 +24,8 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 
 LOCAL_TEST = False
-WANDB = True
-
+WANDB = False
+DATA_SAVER = False
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -91,8 +91,14 @@ def main():
         ]
     )
 
-
-    wav2spec = Wav2Spec()
+    if (DATA_SAVER == True):
+        wav2spec_train = File2Spec(paths=train_loader.dataset.paths)
+        wav2spec_val = File2Spec(paths=val_loader.dataset.paths)
+        #TODO: add data augmentation as precomputation
+    else:
+        #wav2spec_train = Wav2Spec()
+        #wav2spec_val = Wav2Spec()
+        wav2spec = Wav2Spec()
 
     augment = [
             tam.Gain(
@@ -104,7 +110,7 @@ def main():
 
     transforms2 = TransformApplier(
         [
-            # torch_Audiomentations(augment), 
+            # torch_Audiomentations(augment),
             InstanceNorm()
         ]
     )
@@ -121,7 +127,7 @@ def main():
         wav2spec, 
         transforms2
     ).to(device) 
-
+    print(data_pipeline_val)
 
     # Model Architecture
     cnn = PretrainedModel(

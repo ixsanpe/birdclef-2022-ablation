@@ -9,7 +9,7 @@ class Wav2Spec(nn.Module):
     https://github.com/ChristofHenkel/kaggle-birdclef2021-2nd-place/tree/26438069466242e9154aacb9818926dba7ddc7f0
     """
     def __init__(
-        self, 
+        self,
         sample_rate=32000,
         n_fft=1024,
         win_length=1024,
@@ -38,9 +38,9 @@ class Wav2Spec(nn.Module):
 
         self.amplitude_to_db = ta.transforms.AmplitudeToDB(top_db=top_db)
         self.wav2img = nn.Sequential(self.mel_spec, self.amplitude_to_db)
-    
+
     def forward(self, d: dict):
         to_transform = d['x']
         transformed = self.wav2img(to_transform)
         d['x'] = transformed 
-        return d 
+        return d

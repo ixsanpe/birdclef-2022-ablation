@@ -10,6 +10,7 @@ AI4Good project
 3. add the variables DATA_PATH and OUTPUT_DIR, in Euler they are:
 * DATA_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/
 * OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
+* SPEC_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/spec
 
 ##### References:
 
