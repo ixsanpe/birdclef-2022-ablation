@@ -20,8 +20,9 @@ class File2Spec(nn.Module):
 
     def forward(self, d: dict):
         name_file = d['files'] #folder/nameOfFile (without .ogg)
-        file_path = os.path.join(SPEC_PATH, name_file)
-        file_path = file_path + '.pt'
-        d['x'] = torch.load(file_path)
+        #file_path = os.path.join(SPEC_PATH, name_file)
+        file_path = [os.path.join(SPEC_PATH, f+ '.pt') for f in name_file]
+        #file_path = file_path + '.pt'
+        d['x'] = torch.load(file_path) #list of tensors
         return d
 

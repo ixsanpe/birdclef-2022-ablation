@@ -110,7 +110,7 @@ def collate_fn(data: tuple): #data: Dataset
         Every item in the dict is a torch.Tensor
     """
     paths = [d[2] for d in data]
-    files = [f[11:-4] for f in paths] #folder/nameOfFile (without .ogg)
+    files = [f[12:-4] for f in paths] #folder/nameOfFile (without .ogg)
     max_dim = max([d[0].shape[-1] for d in data])
     pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
     x = torch.stack([pad_x(d[0]) for d in data], axis=0)

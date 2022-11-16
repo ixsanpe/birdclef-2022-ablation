@@ -25,7 +25,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 LOCAL_TEST = False
 WANDB = False
-DATA_SAVER = False
+DATA_SAVER = True
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -92,13 +92,12 @@ def main():
     )
 
     if (DATA_SAVER == True):
-        wav2spec_train = File2Spec(paths=train_loader.dataset.paths)
-        wav2spec_val = File2Spec(paths=val_loader.dataset.paths)
+        wav2spec_train = File2Spec()
+        wav2spec_val = File2Spec()
         #TODO: add data augmentation as precomputation
     else:
-        #wav2spec_train = Wav2Spec()
-        #wav2spec_val = Wav2Spec()
-        wav2spec = Wav2Spec()
+        wav2spec_train = Wav2Spec()
+        wav2spec_val = Wav2Spec()
 
     augment = [
             tam.Gain(
@@ -118,13 +117,13 @@ def main():
     
     data_pipeline_train = nn.Sequential(
         transforms1, 
-        wav2spec,
+        wav2spec_train,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1, 
-        wav2spec, 
+        wav2spec_val,
         transforms2
     ).to(device) 
     print(data_pipeline_val)
