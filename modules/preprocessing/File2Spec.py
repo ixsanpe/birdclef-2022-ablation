@@ -23,6 +23,7 @@ class File2Spec(nn.Module):
         #file_path = os.path.join(SPEC_PATH, name_file)
         file_path = [os.path.join(SPEC_PATH, f+ '.pt') for f in name_file]
         #file_path = file_path + '.pt'
-        d['x'] = torch.load(file_path) #list of tensors
+        ## TODO: check if this works once the melspec are computed with crossed inputs
+        d['x'] = torch.stack([torch.load(f) for f in file_path]) #list of tensors
         return d
 

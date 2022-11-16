@@ -25,7 +25,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 LOCAL_TEST = False
 WANDB = False
-DATA_SAVER = True
+DATA_SAVER = False
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
