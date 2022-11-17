@@ -43,7 +43,7 @@ def main():
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 200 # number of training examples (useful for testing)
+    N = -1 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
