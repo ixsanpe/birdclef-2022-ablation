@@ -47,10 +47,13 @@ class EpochLogger(Logger):
         loss_buffer = []
         metric_buffer = {m.name: [] for m in self.metrics}
 
-        for pred, y in self.val_buffer[i]:
-            for metric in self.metrics:
-                metric_buffer[metric.name].append(metric(pred, y))
-            loss_buffer.append(self.trainer.criterion(pred, y))
+        buf = self.val_buffer[i]
+        pred = torch.concat([b[0] for b in buf], axis=0)
+        y = torch.concat([b[-1] for b in buf], axis=0)
+
+        for metric in self.metrics:
+            metric_buffer[metric.name].append(metric(pred, y))
+        loss_buffer.append(self.trainer.criterion(pred, y))
         
         metric_buffer['loss'] = loss_buffer
         

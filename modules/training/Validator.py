@@ -75,7 +75,7 @@ class Validator():
             of the recording, so we cover a range 1-a in total.
             """
 
-            a = n_duration / n_timepoints
+            a = min([1, n_duration / n_timepoints])
             b = self.overlap
 
             N_segments = 1 + ceil((1-a) / (a * (1-b)))

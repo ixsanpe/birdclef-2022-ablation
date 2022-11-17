@@ -6,6 +6,7 @@ from modules import *
 from modules.training.train_utils import *
 
 from modules.training.Trainer import Trainer, Metric 
+from modules import PickyScore
 
 import torch.nn as nn
 import pandas as pd 
@@ -32,16 +33,16 @@ def main():
     # splitting
     duration = 30 
     n_splits = 6
-    test_split = 0.05 # fraction of samples for the validation dataset
+    test_split = 0.2 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 8 # batch size
+    bs = 1 # batch size
 
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 100 # number of training examples (useful for testing)
+    N = 20 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -157,7 +158,8 @@ def main():
     metric_f1micro = MultilabelF1Score(
         num_labels = num_classes, # TODO check this
         topk = 1, # this means we say that we take the label with the highest probability for prediction
-        average='micro' # TODO Discuss that
+        average='micro', # TODO Discuss that
+        # multidim_average='samplewise'
     ).to(device) 
 
     metric_f1macro = MultilabelF1Score(
@@ -168,18 +170,24 @@ def main():
     metric_recall = MultilabelRecall( 
         num_labels=num_classes,
         average='macro'
-    ).to(device)  # Gives a better idea since most predictions are 0 anyways?
-    
+    ).to(device)  # Gives a better idea since most predictions are 0 anyways? 
 
     metric_precision = MultilabelPrecision( 
         num_labels=num_classes,
-        average='macro'
+        average='macro',
     ).to(device)  
+    metric_f1_ours = PickyScore(MultilabelF1Score)
+    metric_recall_ours = PickyScore(MultilabelRecall)
+    metric_prec_ours = PickyScore(MultilabelPrecision)
 
     metrics = {'F1Micro': metric_f1micro,
                 'F1Macro': metric_f1macro,
                 'Recall': metric_recall,
-                'Precision': metric_precision}
+                'Precision': metric_precision, 
+                'F1Ours': metric_f1_ours,
+                'RecallOurs': metric_recall_ours,
+                'PrecisionOurs': metric_prec_ours, 
+            }
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
     overlap = .3

@@ -102,8 +102,6 @@ def collate_fn(data: tuple):
     Parameters:
         data:
             tuple such that data[0] is the audio signal to be processed and data[1] is the corresponding label
-        device:
-            'cpu' or 'cuda'; the device on which to train
     
     Returns:
         a dict of the padded input 'x', the label 'y' and the lengths 'lens' of the original input
