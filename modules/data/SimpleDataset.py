@@ -134,7 +134,7 @@ class SimpleDataset(Dataset):
         wav = self.load_one(path, offset, duration)
         wav_tensor = torch.tensor(wav)
 
-        return wav_tensor, label 
+        return wav_tensor, label, path
 
     def get_label(self, idx):
         return np.logical_or(self.primary_label[idx], self.secondary_label[idx])

@@ -4,3 +4,4 @@ from .SelectSplitData import *
 from .SpecAugment import * 
 from .torch_Audiomentations import * 
 from .Wav2Spec import *
+from .File2Spec import *
