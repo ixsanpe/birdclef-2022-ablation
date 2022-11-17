@@ -92,7 +92,7 @@ class ModelSaver:
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
 
 
-def collate_fn(data: tuple): #data: Dataset
+def collate_fn(data: tuple, load_all: bool=True, sr: float=16000, duration: float=30): #data: Dataset
     """
     Define how the DataLoaders should batch the data
 
@@ -109,9 +109,12 @@ def collate_fn(data: tuple): #data: Dataset
     """
     paths = [d[2] for d in data]
     files = [f[12:-4] for f in paths] #folder/nameOfFile (without .ogg)
-    max_dim = max([d[0].shape[-1] for d in data])
-    pad_x = lambda x: torch.concat([x, torch.zeros((max_dim - x.shape[-1], ))])
-    x = torch.stack([pad_x(d[0]) for d in data], axis=0)
+    if load_all:
+        max_dim = max([d[0].shape[-1] for d in data])
+    else:
+        max_dim = sr * duration
+    pad_x = lambda x: torch.concat([x, torch.zeros((*x.shape[:-1], max_dim - x.shape[-1]))], axis=-1)
+    x = torch.stack([pad_x(d[0][..., :max_dim]) for d in data], axis=0)
     y = torch.stack([torch.tensor(d[1]) for d in data])
     lens = [d[0].shape[-1] for d in data]
     return {'x': x, 'y': y, 'lens': torch.tensor(lens), 'files': files}

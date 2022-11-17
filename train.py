@@ -21,11 +21,12 @@ import torch_audiomentations as tam
 from decouple import config
 
 DATA_PATH = config("DATA_PATH")
+SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 
 
 LOCAL_TEST = False
-WANDB = True
+WANDB = False
 DATA_SAVER = False
 
 def main():
@@ -37,13 +38,13 @@ def main():
     test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 8 # batch size
+    bs = 4 # batch size
 
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 100 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -62,8 +63,11 @@ def main():
     df_train = metadata.drop(tts)
 
     # Datasets, DataLoaders
-    train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
-    val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
+    # train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
+    # val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
+
+    train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
+    val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
 
     train_loader = DataLoader(
         train_data, 
@@ -86,14 +90,16 @@ def main():
     # create model
     transforms1_train = TransformApplier(
         [ 
-            SelectSplitData(duration, n_splits, offset=None), 
+            # SelectSplitData(duration, n_splits, offset=None), 
+            SelectSplitData(duration, n_splits, offset=0., sr=10)
             # add more transforms here
         ]
     )
 
     transforms1_val = TransformApplier(
         [ 
-            SelectSplitData(duration, n_splits, offset=0.), 
+            # SelectSplitData(duration, n_splits, offset=0.), 
+            SelectSplitData(duration, n_splits, offset=0., sr=10), 
             # add more transforms here
         ]
     )
@@ -124,13 +130,13 @@ def main():
     
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
-        wav2spec_train,
+        # wav2spec_train,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1_val, 
-        wav2spec_val,
+        # wav2spec_val,
         transforms2
     ).to(device) 
 
