@@ -25,7 +25,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 
 LOCAL_TEST = False
-WANDB = False
+WANDB = True
 DATA_SAVER = False
 
 def main():
@@ -43,7 +43,7 @@ def main():
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 20 # number of training examples (useful for testing)
+    N = -1 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -133,7 +133,6 @@ def main():
         wav2spec_val,
         transforms2
     ).to(device) 
-    print(data_pipeline_val)
 
     # Model Architecture
     cnn = PretrainedModel(
@@ -158,15 +157,14 @@ def main():
         output_head,
     ).to(device)
 
-    optimizer = Adam(model.parameters(), lr = learning_rate)
+    optimizer = Adam(model.parameters(), lr=learning_rate)
 
     criterion = nn.BCELoss() 
 
     metric_f1micro = MultilabelF1Score(
-        num_labels = num_classes, # TODO check this
+        num_labels = num_classes, 
         topk = 1, # this means we say that we take the label with the highest probability for prediction
-        average='micro', # TODO Discuss that
-        # multidim_average='samplewise'
+        average='micro', 
     ).to(device) 
 
     metric_f1_ours = PickyScore(MultilabelF1Score)
