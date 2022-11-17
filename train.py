@@ -162,28 +162,12 @@ def main():
         # multidim_average='samplewise'
     ).to(device) 
 
-    metric_f1macro = MultilabelF1Score(
-        num_labels = num_classes, # TODO check this
-        topk = 1, # this means we say that we take the label with the highest probability for prediction
-        average='macro' # TODO Discuss that
-    ).to(device) 
-    metric_recall = MultilabelRecall( 
-        num_labels=num_classes,
-        average='macro'
-    ).to(device)  # Gives a better idea since most predictions are 0 anyways? 
-
-    metric_precision = MultilabelPrecision( 
-        num_labels=num_classes,
-        average='macro',
-    ).to(device)  
     metric_f1_ours = PickyScore(MultilabelF1Score)
     metric_recall_ours = PickyScore(MultilabelRecall)
     metric_prec_ours = PickyScore(MultilabelPrecision)
 
-    metrics = {'F1Micro': metric_f1micro,
-                'F1Macro': metric_f1macro,
-                'Recall': metric_recall,
-                'Precision': metric_precision, 
+    metrics = {
+                'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
                 'RecallOurs': metric_recall_ours,
                 'PrecisionOurs': metric_prec_ours, 
