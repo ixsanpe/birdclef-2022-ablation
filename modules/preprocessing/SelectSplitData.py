@@ -32,8 +32,9 @@ class SelectSplitData(nn.Module):
         """
         pad x to compatible length with respect to self.duration, self.sr
         """
-        if x.shape[-1] < self.sr * self.duration: 
-            missing = torch.zeros((*x.shape[:-1], self.sr * self.duration - x.shape[-1]))
+        if x.shape[-1] < self.sr * self.duration:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            missing = torch.zeros((*x.shape[:-1], self.sr * self.duration - x.shape[-1])).to(device)
             x = torch.concat([x, missing], axis=-1).to(device)
         return x
 
@@ -44,8 +45,9 @@ class SelectSplitData(nn.Module):
 
         # select an offset (randomly or self.offset)
         if self.offset is None:
-            offset = torch.rand(durations.shape, device=max_offset.device) * max_offset 
+            offset = torch.rand(durations.shape, device=max_offset.device) * max_offset
         else:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
             offset = torch.where(max_offset < self.offset, max_offset, self.offset).to(device)
         
         # select that data
