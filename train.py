@@ -34,10 +34,10 @@ def main():
     # splitting
     duration = 30 
     n_splits = 6
-    test_split = 0.2 # fraction of samples for the validation dataset
+    test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 1 # batch size
+    bs = 8 # batch size
 
     epochs = 300
     learning_rate = 1e-3
