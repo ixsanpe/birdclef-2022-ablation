@@ -177,7 +177,7 @@ def main():
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
     overlap = .3
-    validator = Validator(data_pipeline_val, model, overlap=overlap)
+    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device)
 
     metrics = [
         Metric(name, method) for name, method in metrics.items()
