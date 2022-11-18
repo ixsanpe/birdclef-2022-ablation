@@ -26,8 +26,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 
 LOCAL_TEST = False
-WANDB = False
-DATA_SAVER = False
+WANDB = True
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -38,13 +37,13 @@ def main():
     test_split = 0.05 # fraction of samples for the validation dataset
 
     # some hyperparameters
-    bs = 4 # batch size
+    bs = 8 # batch size
 
     epochs = 300
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = 100 # number of training examples (useful for testing)
+    N = -1 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
@@ -73,7 +72,7 @@ def main():
         train_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=collate_fn, # defined in train_utils.py
+        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
     )
@@ -81,7 +80,7 @@ def main():
         val_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=collate_fn, # defined in train_utils.py
+        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
     )
@@ -91,7 +90,7 @@ def main():
     transforms1_train = TransformApplier(
         [ 
             # SelectSplitData(duration, n_splits, offset=None), 
-            SelectSplitData(duration, n_splits, offset=0., sr=10)
+            SelectSplitData(duration, n_splits, offset=0., sr=100)
             # add more transforms here
         ]
     )
@@ -99,18 +98,10 @@ def main():
     transforms1_val = TransformApplier(
         [ 
             # SelectSplitData(duration, n_splits, offset=0.), 
-            SelectSplitData(duration, n_splits, offset=0., sr=10), 
+            SelectSplitData(duration, n_splits, offset=0., sr=100), 
             # add more transforms here
         ]
     )
-
-    if (DATA_SAVER == True):
-        wav2spec_train = File2Spec()
-        wav2spec_val = File2Spec()
-        #TODO: add data augmentation as precomputation
-    else:
-        wav2spec_train = Wav2Spec()
-        wav2spec_val = Wav2Spec()
 
     augment = [
             tam.Gain(
