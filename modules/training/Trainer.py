@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from typing import Callable
 from .Metric import Metric
 from .Logging import *
+from .Validator import Validator
 
 class Trainer(nn.Module):
     def __init__(
@@ -11,6 +12,7 @@ class Trainer(nn.Module):
         model: nn.Module, 
         data_pipeline_train: nn.Module, 
         data_pipeline_val: nn.Module, 
+        validator: Validator, 
         model_saver, 
         criterion: Callable, 
         optimizer: torch.optim.Optimizer, 
@@ -31,6 +33,7 @@ class Trainer(nn.Module):
         self.optimizer = optimizer
         self.device = device
         self.validate_every = validate_every
+        self.validator = validator
         self.verbose = verbose
         self.train_logger = TrainLogger(self, metrics=metrics, use_wandb=use_wandb, keep_epochs=keep_epochs, **wandb_args)
     
@@ -62,7 +65,7 @@ class Trainer(nn.Module):
         
         with torch.no_grad():
             for d_v in val_loader:
-                y_v_logits, y_v = self.forward_item(d_v)
+                y_v_logits, y_v = self.validator(d_v)
                 y_v_pred = torch.sigmoid(y_v_logits)
                 epoch_logger.register_val(i, y_v_pred, y_v) 
 

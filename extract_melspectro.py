@@ -38,18 +38,22 @@ transforms1 = TransformApplier(
         # add more transforms here
     ]
 )
-wav2img = nn.Sequential(transforms1,mel_spec, amplitude_to_db)
+wav2img = nn.Sequential(
+    # transforms1,
+    mel_spec, 
+    amplitude_to_db
+)
 all_files = [os.path.join(path, name) for path, subdirs, files in os.walk(audio_path) for name in files]
 for f in all_files:
-    new_dir = SPEC_PATH+f[86:-12]
-    try:
-        os.makedirs(new_dir)
-    except:
-        pass
-    wav, sr = librosa.load(f, sr=None, offset=0, duration=None)
-    len = wav.shape[0]#[d[0].shape[-1] for d in data]
-    img = wav2img(torch.Tensor(wav))
-    torch.save(img,new_dir + f[-12:-4]+'.pt')
+    bird_name, file_name = f.split('/')[-2:]
+    new_dir = SPEC_PATH + bird_name + '/'
+    target = new_dir + file_name.replace('.ogg', '.pt')
+    if not os.path.isfile(target):
+        os.makedirs(new_dir, exist_ok=True)
+        wav, sr = librosa.load(f, sr=None, offset=0, duration=None)
+        len = wav.shape[0]#[d[0].shape[-1] for d in data]
+        img = wav2img(torch.Tensor(wav))
+        torch.save(img, target)
 
 ## Delete empty folders
 root = SPEC_PATH
