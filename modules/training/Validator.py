@@ -11,6 +11,7 @@ class Validator():
             self, 
             data_pipeline, 
             model, 
+            device: str, 
             overlap: float=.5, 
             policy: Callable=lambda l: torch.stack(l, axis=-1).max(axis=-1).values
         ):
@@ -34,6 +35,7 @@ class Validator():
         assert overlap < 1 and overlap >= 0, f'overlap has to be in [0, 1) but got {overlap=}'
         self.overlap = overlap
         self.policy = policy
+        self.device = device
 
         # check for splitting data
         self.data_splitter = None 
@@ -112,8 +114,15 @@ class Validator():
             The way to compute these is specified in self.policy
         """
         return self.policy(logits_buffer)
-        
+    
+    def to_device(self, d: dict):
+        for k, v in d.items():
+            if isinstance(v, torch.Tensor):
+                d[k] = v.to(self.device)
+        return d
+
     def forward_item(self, d: dict):
+        d = self.to_device(d)
         d = self.data_pipeline(d)
         x, y = d['x'], d['y'].float()
         logits = self.model(x)
