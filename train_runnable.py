@@ -36,7 +36,8 @@ def parse_args():
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size_train', type=int, default=8)
+    parser.add_argument('--batch_size_val', type=int, default=8)
     parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
@@ -80,7 +81,8 @@ def main():
     offset_val = args.offset_val
 
     # some hyperparameters
-    bs = args.batch_size
+    bs_train = args.batch_size_train
+    bs_val = args.batch_size_val
 
     epochs = args.epochs 
     learning_rate = args.learning_rate
@@ -123,19 +125,21 @@ def main():
     train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
     val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
 
+    train_selector = Selector(duration=max_duration, offset=offset_train, device=device)
+
     train_loader = DataLoader(
         train_data, 
-        batch_size=bs, 
+        batch_size=bs_train, 
         num_workers=8, 
-        collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration), # defined in train_utils.py
+        collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration, selector=train_selector), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
     )
     val_loader = DataLoader(
         val_data, 
-        batch_size=bs, 
+        batch_size=bs_val, 
         num_workers=8, 
-        collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration), # defined in train_utils.py
+        collate_fn=lambda x: collate_fn(x, load_all=True, sr=sr, duration=max_duration), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
     )
@@ -240,7 +244,8 @@ def main():
 
     config = {
         "epochs": epochs,
-        "batch_size": bs,
+        "batch_size_train": bs_train,
+        "batch_size_val": bs_val,
         "learning_rate": learning_rate,
         "device": device,
         "duration" : duration,

@@ -34,13 +34,13 @@ class SelectSplitData(nn.Module):
         """
         if x.shape[-1] < self.sr * self.duration:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            missing = torch.zeros((*x.shape[:-1], self.sr * self.duration - x.shape[-1])).to(device)
+            missing = torch.zeros((*x.shape[:-1], int(self.sr * self.duration - x.shape[-1]))).to(device)
             x = torch.concat([x, missing], axis=-1).to(device)
         return x
 
     def get_intervals(self, durations):
         # for each sample calculate the maximum allowed offset
-        max_offset = durations - self.duration * self.sr 
+        max_offset = durations - self.duration * self.sr - 1
         max_offset = torch.where(max_offset > 0, max_offset, 0)
 
         # select an offset (randomly or self.offset)
@@ -51,7 +51,7 @@ class SelectSplitData(nn.Module):
             offset = torch.where(max_offset < self.offset, max_offset, self.offset).to(device)
         
         # select that data
-        start = offset.int()
+        start = torch.ceil(offset).int()
         stop = start + self.duration * self.sr
         return start, stop.int() 
     
@@ -74,7 +74,7 @@ class SelectSplitData(nn.Module):
         durations = d['lens']
         start, stop = self.get_intervals(durations)
         # select that data
-        waveform = torch.stack([x[idx, ..., i:j] for idx, (i,j) in enumerate(zip(start, stop))], axis=0)
+        waveform = torch.stack([x[idx, ..., i:j] for idx, (i, j) in enumerate(zip(start, stop))], axis=0)
 
         # return the reshaped data
         d['x'] = waveform.reshape((waveform.shape[0]*self.n_splits, *waveform.shape[1:-1], -1))

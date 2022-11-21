@@ -6,8 +6,9 @@ def main():
         'wandb': False, 
         'sr': 1, 
         'max_duration': 30000,
-        'duration': 1500, 
-        'batch_size': 2
+        'duration': 300, 
+        'batch_size_train': 8, 
+        'batch_size_val': 1, 
     }
 
     modules = [ 
