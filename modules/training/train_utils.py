@@ -112,7 +112,8 @@ def collate_fn(data: tuple, load_all: bool=True, sr: float=16000, duration: floa
     if load_all:
         max_dim = max([d[0].shape[-1] for d in data])
     else:
-        max_dim = sr * duration
+        max_dim = int(sr * duration)
+ 
     pad_x = lambda x: torch.concat([x, torch.zeros((*x.shape[:-1], max_dim - x.shape[-1]))], axis=-1)
     x = torch.stack([pad_x(d[0][..., :max_dim]) for d in data], axis=0)
     y = torch.stack([torch.tensor(d[1]) for d in data])

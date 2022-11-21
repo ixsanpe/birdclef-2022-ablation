@@ -53,7 +53,7 @@ class SelectSplitData(nn.Module):
         # select that data
         start = offset.int()
         stop = start + self.duration * self.sr
-        return start, stop 
+        return start, stop.int() 
     
     def forward(self, d: dict):
         """
@@ -73,7 +73,6 @@ class SelectSplitData(nn.Module):
         # select which data to pick
         durations = d['lens']
         start, stop = self.get_intervals(durations)
-
         # select that data
         waveform = torch.stack([x[idx, ..., i:j] for idx, (i,j) in enumerate(zip(start, stop))], axis=0)
 

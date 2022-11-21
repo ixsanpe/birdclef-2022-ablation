@@ -3,6 +3,7 @@ venv/*
 kaggle-birdclef2021-2nd-place/
 *.pyc
 *.ipynb
+launch.json
 ixeia*
 data/*
 sbatch.sh
@@ -17,3 +18,4 @@ subscript.sh
 scratch.py
 .idea/
 .env
+misc_testing/*
