@@ -43,6 +43,16 @@ class AblationRun():
 
 class Ablator():
     def __init__(self, script_name: str, default_bool: bool, modules: list[str]):
+        """
+        Run an ablation study for script_name by including/excluding modules
+        Parameters:
+            script_name:
+                name of script to run a study on
+            default_bool:
+                The default choice to include modules
+            modules:
+                Candidate modules to exclude
+        """
         self.script_name = script_name
         self.default_bool = default_bool 
         self.modules = modules 

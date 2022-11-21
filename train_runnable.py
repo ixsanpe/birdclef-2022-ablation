@@ -28,6 +28,10 @@ SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 
 def parse_args():
+    """
+    This script runs with args. Below is a function to define the arguments
+    and to parse them as they come in. 
+    """
     parser = argparse.ArgumentParser(description='Start a training run')
     # Initialize the default boolean parameter
     parser.add_argument('--default_bool', type=s2b)
@@ -45,6 +49,7 @@ def parse_args():
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=150)
+    parser.add_argument('--precompute', type=s2b, default='True')
 
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=30, help='duration to train on')
@@ -70,8 +75,7 @@ def main():
     args = parse_args()
     print(args)
     experiment_name = args.experiment_name
-    # for pre-processing
-    # splitting
+    # Take args defined in parse_args(): 
     duration = args.duration 
     max_duration = args.max_duration
     n_splits = args.n_splits
@@ -80,18 +84,22 @@ def main():
     offset_train = args.offset_train 
     offset_val = args.offset_val
 
-    # some hyperparameters
     bs_train = args.batch_size_train
     bs_val = args.batch_size_val
+    precompute = args.precompute
 
     epochs = args.epochs 
     learning_rate = args.learning_rate
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model_name = args.model_name
 
+    # Here, to use the args, define a dict
+    # containing losses available, and access them with the
+    # key args.loss
     losses = {'BCELoss': nn.BCELoss()}
     criterion = losses[args.loss]
 
+    # Similarly define optimizers as losses
     optimizers = {'Adam': Adam}
     optimizer = optimizers[args.optimizer]
 
@@ -102,6 +110,7 @@ def main():
 
     N = args.N 
 
+    # From this point on, it is a regular train function
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
 
@@ -119,11 +128,12 @@ def main():
     df_train = metadata.drop(tts)
 
     # Datasets, DataLoaders
-    # train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
-    # val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
-
-    train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
-    val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
+    if precompute:
+        data_class = SpecDataset
+    else:
+        data_class = SimpleDataset
+    train_data = data_class(df_train, SPEC_PATH, mode='train', labels=birds)
+    val_data = data_class(df_val, SPEC_PATH, mode='train', labels=birds)    
 
     train_selector = Selector(duration=max_duration, offset=offset_train, device=device)
 
@@ -139,7 +149,7 @@ def main():
         val_data, 
         batch_size=bs_val, 
         num_workers=8, 
-        collate_fn=lambda x: collate_fn(x, load_all=True, sr=sr, duration=max_duration), # defined in train_utils.py
+        collate_fn=lambda x: collate_fn(x, load_all=True), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
     )
@@ -179,15 +189,17 @@ def main():
     )
     #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
     
+    wav2spec = nn.Identity() if precompute else Wav2Spec()
+
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
-        # wav2spec_train,
+        wav2spec,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1_val, 
-        # wav2spec_val,
+        wav2spec,
         transforms2
     ).to(device) 
 
@@ -256,7 +268,8 @@ def main():
         "transforms2": transforms2,
         "transforms3": transforms3,
         "model": model,
-        "test_split" : test_split
+        "test_split" : test_split, 
+        "args": args
     }
 
     trainer = Trainer(

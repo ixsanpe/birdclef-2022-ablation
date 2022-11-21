@@ -108,6 +108,14 @@ def collate_fn(
     Parameters:
         data:
             tuple such that data[0] is the audio signal to be processed and data[1] is the corresponding label
+        load_all:
+            whether to load the full file. Useful for memory issues
+        sr:
+            If not load_all, this is a sample rate (or proxy thereof if not loading audio)
+        duration:
+            If not load_all, this is the duration at the given sample rate
+        selector:
+            A selector can be passed to select only some of the data (at random if desired)
     
     Returns:
         a dict of the padded input 'x', the label 'y' and the lengths 'lens' of the original input
@@ -127,7 +135,7 @@ def collate_fn(
         x = torch.stack([pad_x(s[..., :max_dim]) for s in selected], axis=0)
     else:
         selected = [selector(d[0]) for d in data]
-        x = torch.stack([pad_x(s[..., :max_dim]) for s in selected], axis=0)
+        x = torch.stack([pad_x(s) for s in selected], axis=0)
 
     y = torch.stack([torch.tensor(d[1]) for d in data])
     lens = [s.shape[-1] for s in selected]
