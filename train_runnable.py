@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=150)
+    parser.add_argument('--precompute', type=s2b, default='True')
 
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=30, help='duration to train on')
@@ -83,6 +84,7 @@ def main():
     # some hyperparameters
     bs_train = args.batch_size_train
     bs_val = args.batch_size_val
+    precompute = args.precompute
 
     epochs = args.epochs 
     learning_rate = args.learning_rate
@@ -119,11 +121,12 @@ def main():
     df_train = metadata.drop(tts)
 
     # Datasets, DataLoaders
-    # train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
-    # val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
-
-    train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
-    val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
+    if precompute:
+        data_class = SpecDataset
+    else:
+        data_class = SimpleDataset
+    train_data = data_class(df_train, SPEC_PATH, mode='train', labels=birds)
+    val_data = data_class(df_val, SPEC_PATH, mode='train', labels=birds)    
 
     train_selector = Selector(duration=max_duration, offset=offset_train, device=device)
 
@@ -179,15 +182,17 @@ def main():
     )
     #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
     
+    wav2spec = nn.Identity() if precompute else Wav2Spec()
+
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
-        # wav2spec_train,
+        wav2spec,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1_val, 
-        # wav2spec_val,
+        wav2spec,
         transforms2
     ).to(device) 
 
@@ -256,7 +261,8 @@ def main():
         "transforms2": transforms2,
         "transforms3": transforms3,
         "model": model,
-        "test_split" : test_split
+        "test_split" : test_split, 
+        "args": args
     }
 
     trainer = Trainer(

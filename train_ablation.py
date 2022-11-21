@@ -1,14 +1,20 @@
 from ablation import Ablator 
+import time 
 def main():
     kwargs = {
-        'epochs': 5, 
-        'N': 100, 
-        'wandb': False, 
+        'epochs': 10, 
+        'N': -1, 
+        'wandb': True, 
+        'project_name': 'AblationTest',
+        'experiment_name': 'ablation_' + str(int(time.time())), 
         'sr': 1, 
-        'max_duration': 30000,
-        'duration': 300, 
-        'batch_size_train': 8, 
+        'max_duration': 3000,
+        'duration': 500, 
+        'batch_size_train': 16, 
         'batch_size_val': 1, 
+        'validate_every': 150, 
+        'precompute': 'True', 
+        'n_splits': 5,
     }
 
     modules = [ 
@@ -21,7 +27,7 @@ def main():
         default_bool=default_bool, 
         modules=modules
     )
-    ablator(**kwargs)
+    ablator(run_reference=True, **kwargs)
 
      
 

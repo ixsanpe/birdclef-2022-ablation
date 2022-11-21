@@ -225,19 +225,19 @@ class TrainLogger(Logger):
         self.register(epoch_logger)
         return epoch_logger
 
-    def finish_epoch(self):
+    def wandb_report(self):
         """
         Make a call to self.wandb and manage epochs
         """
         last_epoch = self.epochs[-1]
         buffer = last_epoch.get_validation_buffer()
 
-        # Make tensors of shape (num_validation_datapoints, num_classes) to rank probabilities
-        preds = torch.concat([b[0] for b in buffer], axis=0)
-        ys = torch.concat([b[-1] for b in buffer], axis=0)
-        pred_ranking = [print_probability_ranking(pred) for pred in preds]
-        y_ranking = [print_probability_ranking(y) for y in ys]
         if self.use_wandb:
+            # Make tensors of shape (num_validation_datapoints, num_classes) to rank probabilities
+            preds = torch.concat([b[0] for b in buffer], axis=0)
+            ys = torch.concat([b[-1] for b in buffer], axis=0)
+            pred_ranking = [print_probability_ranking(pred) for pred in preds]
+            y_ranking = [print_probability_ranking(y) for y in ys]
             stats = {
                 'train_loss': last_epoch.running_train_loss, 
                 'val_loss': last_epoch.validation_loss(), 
@@ -247,6 +247,9 @@ class TrainLogger(Logger):
             for m in self.metrics:
                 stats[m.name] = last_epoch.get_metric(m.name)
             self.wandb_logger(stats)
+    
+    def finish_epoch(self):
         if not self.keep_epochs:
+            last_epoch = self.epochs[-1]
             del last_epoch # free up some memory
       
