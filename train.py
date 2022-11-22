@@ -62,17 +62,18 @@ def main():
     df_train = metadata.drop(tts)
 
     # Datasets, DataLoaders
-    # train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
-    # val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
+    train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
+    val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
 
-    train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
-    val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
+    #train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds) # SPEC
+    #val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    # SPEC
 
     train_loader = DataLoader(
         train_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
+        #collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # SPEC
+        collate_fn=collate_fn,
         shuffle=True, 
         pin_memory=True
     )
@@ -80,27 +81,10 @@ def main():
         val_data, 
         batch_size=bs, 
         num_workers=4, 
-        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
+        #collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # SPEC
+        collate_fn=collate_fn,
         shuffle=False, 
         pin_memory=True
-    )
-
-
-    # create model
-    transforms1_train = TransformApplier(
-        [ 
-            # SelectSplitData(duration, n_splits, offset=None), 
-            SelectSplitData(duration, n_splits, offset=0., sr=100)
-            # add more transforms here
-        ]
-    )
-
-    transforms1_val = TransformApplier(
-        [ 
-            # SelectSplitData(duration, n_splits, offset=0.), 
-            SelectSplitData(duration, n_splits, offset=0., sr=100), 
-            # add more transforms here
-        ]
     )
 
     augment = [
@@ -111,23 +95,42 @@ def main():
             tam.PolarityInversion(p=0.5)
         ]
 
+    # create model
+    transforms1_train = TransformApplier(
+        [ 
+            torch_Audiomentations(augment), # AUG
+            SelectSplitData(duration, n_splits, offset=None),
+            #SelectSplitData(duration, n_splits, offset=0., sr=100)  # SPEC
+        ]
+    )
+
+    transforms1_val = TransformApplier(
+        [ 
+            torch_Audiomentations(augment), # AUG
+            SelectSplitData(duration, n_splits, offset=0.), 
+            #SelectSplitData(duration, n_splits, offset=0., sr=100),  # SPEC
+        ]
+    )
+
+    wav2spec_train = Wav2Spec()
+    wav2spec_val = Wav2Spec()
+
     transforms2 = TransformApplier(
         [
-            # torch_Audiomentations(augment),
+            SpecAugment(), # AUG
             InstanceNorm()
         ]
     )
-    #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
-    
+
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
-        # wav2spec_train,
+        wav2spec_train, # SPEC
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1_val, 
-        # wav2spec_val,
+        wav2spec_val, # SPEC
         transforms2
     ).to(device) 
 
@@ -211,7 +214,7 @@ def main():
         optimizer=optimizer, 
         device=device, 
         metrics=metrics, 
-        validate_every=10, 
+        validate_every=150, 
         use_wandb=WANDB, 
         wandb_args={
             'columns': ['Predicted', 'Expected'], 
