@@ -5,7 +5,7 @@ class SpecDataset(SimpleDataset):
     """
     Initialized in the same way as SimpleDataset
     Only overwrites the __getitem__ method to load
-    a spectrogram from memory instead of a wav file
+    a spectrogram from memory instead of an .ogg file
     """
     def __getitem__(self, idx, debug=False):
         """

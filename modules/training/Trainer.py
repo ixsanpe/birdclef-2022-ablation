@@ -109,15 +109,18 @@ class Trainer(nn.Module):
                 if i % validate_every == validate_every-1: 
                     epoch_logger.train_report(i)
                     self.validate(epoch_logger, val_loader, i)
+                    self.train_logger.wandb_report() # report to wandb etc 
 
             if validate_every == -1 or i < validate_every + 1:
                 epoch_logger.train_report(len(val_loader))
                 self.validate(epoch_logger, val_loader, validate_every)
+                self.train_logger.wandb_report() # report to wandb etc 
                 
             if self.model_saver != None:
                 self.model_saver.save_best_model(epoch_logger.validation_loss(), epoch, self.model, self.optimizer, self.criterion)
 
             epoch_logger.finish_epoch(train_loader) # report final loss for this epoch
+            self.train_logger.wandb_report() # report to wandb etc 
             self.train_logger.finish_epoch() # report to wandb etc 
 
         # At the end of training: Save model and training curve

@@ -26,7 +26,7 @@ OUTPUT_DIR = config("OUTPUT_DIR")
 
 
 LOCAL_TEST = False
-WANDB = True
+WANDB = False
 
 def main():
     experiment_name = "baseline_" + str(int(time.time())) if not LOCAL_TEST else "local"
@@ -43,7 +43,7 @@ def main():
     learning_rate = 1e-3
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    N = -1 # number of training examples (useful for testing)
+    N = 100 # number of training examples (useful for testing)
 
     if N != -1:
         warnings.warn(f'\n\nWarning! Using only {N} training examples!\n')
