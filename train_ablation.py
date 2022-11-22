@@ -31,7 +31,8 @@ def main():
     ]
     # TODO: add alternatives below!
     sweeping = { # first argument is the default, then it makes a run for each alternative
-        'model_name': ['efficientnet_b2', 'resnet34', ], 
+        'model_name': ['efficientnet_b2', 'resnet34', 'eca_nfnet_l0'], 
+        #'loss': ['focal','bce']
         # 'learning_rate': [1e-3, 1e-2, 1e-4] # Just as an example, we could have done this too
     }
     default_bool = False # whether to include each module in modules by default
