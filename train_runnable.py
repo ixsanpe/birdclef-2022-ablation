@@ -26,6 +26,7 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
+SPLIT_PATH = config("SPLIT_PATH")
 
 def parse_args():
     """
@@ -120,12 +121,10 @@ def main():
 
     num_classes = len(birds)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:N]
 
-    # train test split
-    tts = metadata.sample(frac=test_split).index 
-    df_val = metadata.iloc[tts]
-    df_train = metadata.drop(tts)
+    df_train = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
+    df_val = pd.read_csv(f'{SPLIT_PATH}val_metadata.csv')[:N]
+
 
     # Datasets, DataLoaders
     if precompute:

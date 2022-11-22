@@ -23,6 +23,7 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
+SPLIT_PATH = config("SPLIT_PATH")
 
 
 LOCAL_TEST = False
@@ -54,26 +55,21 @@ def main():
 
     num_classes = len(birds)
 
-    metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')[:N]
-
-    # train test split
-    tts = metadata.sample(frac=test_split).index 
-    df_val = metadata.iloc[tts]
-    df_train = metadata.drop(tts)
+    df_train = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
+    df_val = pd.read_csv(f'{SPLIT_PATH}val_metadata.csv')[:N]
 
     # Datasets, DataLoaders
-    train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
-    val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
+    #train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
+    #val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
 
-    #train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds) # SPEC
-    #val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    # SPEC
+    train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
+    val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)    
 
     train_loader = DataLoader(
         train_data, 
         batch_size=bs, 
         num_workers=4, 
-        #collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # SPEC
-        collate_fn=collate_fn,
+        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
     )
@@ -81,12 +77,10 @@ def main():
         val_data, 
         batch_size=bs, 
         num_workers=4, 
-        #collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # SPEC
-        collate_fn=collate_fn,
+        collate_fn=lambda x: collate_fn(x, load_all=False, sr=100, duration=30), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
     )
-
     augment = [
             tam.Gain(
             min_gain_in_db=-15.0,
@@ -95,42 +89,43 @@ def main():
             tam.PolarityInversion(p=0.5)
         ]
 
+
     # create model
     transforms1_train = TransformApplier(
         [ 
-            torch_Audiomentations(augment), # AUG
-            SelectSplitData(duration, n_splits, offset=None),
-            #SelectSplitData(duration, n_splits, offset=0., sr=100)  # SPEC
+            # torch_Audiomentations(augment), # AUG
+            # SelectSplitData(duration, n_splits, offset=None),
+            SelectSplitData(duration, n_splits, offset=0., sr=100)
+            # add more transforms here
         ]
     )
 
     transforms1_val = TransformApplier(
-        [ 
-            torch_Audiomentations(augment), # AUG
-            SelectSplitData(duration, n_splits, offset=0.), 
-            #SelectSplitData(duration, n_splits, offset=0., sr=100),  # SPEC
+        [
+            # torch_Audiomentations(augment), # AUG
+            # SelectSplitData(duration, n_splits, offset=0.),
+            SelectSplitData(duration, n_splits, offset=0., sr=100), 
+            # add more transforms here
         ]
     )
 
-    wav2spec_train = Wav2Spec()
-    wav2spec_val = Wav2Spec()
 
     transforms2 = TransformApplier(
         [
-            SpecAugment(), # AUG
+            # torch_Audiomentations(augment),
             InstanceNorm()
         ]
     )
 
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
-        wav2spec_train, # SPEC
+        # wav2spec_train,
         transforms2, 
     ).to(device)
 
     data_pipeline_val = nn.Sequential(
         transforms1_val, 
-        wav2spec_val, # SPEC
+        # wav2spec_val,
         transforms2
     ).to(device) 
 
@@ -214,7 +209,7 @@ def main():
         optimizer=optimizer, 
         device=device, 
         metrics=metrics, 
-        validate_every=150, 
+        validate_every=10, 
         use_wandb=WANDB, 
         wandb_args={
             'columns': ['Predicted', 'Expected'], 
