@@ -34,9 +34,9 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Start a training run')
     # Initialize the default boolean parameter
-    parser.add_argument('--default_bool', type=s2b)
-    args = parser.parse_known_args() 
-    default_bool = args[0].default_bool
+    # parser.add_argument('--default_bool', type=s2b)
+    # args = parser.parse_known_args() 
+    # default_bool = args[0].default_bool
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
@@ -59,8 +59,8 @@ def parse_args():
     parser.add_argument('--offset_val', type=float, default=0.)
     parser.add_argument('--offset_train', type=int, default=None)
     parser.add_argument('--model_name', type=str, default='efficientnet_b2')
-    parser.add_argument('--InstanceNorm', type=s2b, default=default_bool)
-    parser.add_argument('--SimpleAttention', type=s2b, default=default_bool)
+    parser.add_argument('--InstanceNorm', type=s2b)# , default=default_bool)
+    parser.add_argument('--SimpleAttention', type=s2b, default='True')
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
@@ -174,11 +174,13 @@ def main():
 
     augment = [
             tam.Gain(
-            min_gain_in_db=-15.0,
-            max_gain_in_db=5.0,
-            p=0.5),
+                min_gain_in_db=-15.0,
+                max_gain_in_db=5.0,
+                p=0.5
+            ),
             tam.PolarityInversion(p=0.5)
         ]
+    
 
     transforms2 = [ 
         InstanceNorm()
@@ -248,7 +250,7 @@ def main():
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
-    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device)
+    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device, )
 
     metrics = [
         Metric(name, method) for name, method in metrics.items()
