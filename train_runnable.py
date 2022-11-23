@@ -6,7 +6,8 @@ from modules import *
 from modules.training.train_utils import *
 
 from modules.training.Trainer import Trainer, Metric 
-from modules import PickyScore
+# from modules import PickyScore
+from modules import RecallMacro, PrecisionMacro, F1Macro
 
 import argparse
 from ablation import s2b, check_args
@@ -16,7 +17,7 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
+from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision 
 import time
 import warnings
 
@@ -236,9 +237,9 @@ def main():
         average='micro', 
     ).to(device) 
 
-    metric_f1_ours = PickyScore(MultilabelF1Score)
-    metric_recall_ours = PickyScore(MultilabelRecall)
-    metric_prec_ours = PickyScore(MultilabelPrecision)
+    metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
+    metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
+    metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
 
     metrics = {
                 'F1Micro': metric_f1micro,

@@ -27,12 +27,12 @@ def main():
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
-        'InstanceNorm', 
+        # 'InstanceNorm', 
     ]
     # TODO: add alternatives below!
     sweeping = { # first argument is the default, then it makes a run for each alternative
         'model_name': ['efficientnet_b2', 'resnet34', 'eca_nfnet_l0'], 
-        #'loss': ['focal','bce']
+        #'loss': ['BCELoss', 'FocalLoss',]
         # 'learning_rate': [1e-3, 1e-2, 1e-4] # Just as an example, we could have done this too
     }
     default_bool = False # whether to include each module in modules by default
@@ -65,7 +65,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=True, **kwargs)
+    ablator(run_reference=False, **kwargs)
 
      
 
