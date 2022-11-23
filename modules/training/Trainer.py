@@ -107,12 +107,12 @@ class Trainer(nn.Module):
 
                 # reporting etc
                 if i % validate_every == validate_every-1: 
-                    epoch_logger.train_report(i)
+                    epoch_logger.train_report()
                     self.validate(epoch_logger, val_loader, i)
                     self.train_logger.wandb_report() # report to wandb etc 
 
             if validate_every == -1 or i < validate_every + 1:
-                epoch_logger.train_report(len(val_loader))
+                epoch_logger.train_report()
                 self.validate(epoch_logger, val_loader, validate_every)
                 self.train_logger.wandb_report() # report to wandb etc 
                 

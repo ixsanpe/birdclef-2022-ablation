@@ -80,3 +80,76 @@ class PickyScore():
         # Compute the score
         retval = score(test_pred, test_y)
         return retval 
+
+class PrecisionMacro():    
+    def __init__(self, thresh=.5):
+        self.thresh = thresh
+
+    @staticmethod
+    def score(pred: torch.Tensor, y: torch.Tensor, thresh=.5):
+        assert pred.shape == y.shape 
+        # check where pred and y agree
+        pred = torch.where(pred > thresh, 1, 0)
+        y = torch.where(y > thresh, 1, 0)
+        agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
+
+        if torch.all(agree == 0): return agree
+        # divide by the number of preds
+        n_preds = pred.sum(axis=0)
+        score = agree / n_preds
+        # return
+        return score
+    
+    def __call__(self, pred: torch.Tensor, y: torch.Tensor):
+        score = PrecisionMacro.score(pred, y, self.thresh)
+        return score.float().nanmean()
+
+class RecallMacro():  
+    def __init__(self, thresh=.5):
+        self.thresh = thresh
+
+    @staticmethod  
+    def score(pred: torch.Tensor, y: torch.Tensor, thresh=.5):
+        assert pred.shape == y.shape 
+        # check where pred and y agree
+        pred = torch.where(pred > thresh, 1, 0)
+        y = torch.where(y > thresh, 1, 0)
+        agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
+
+        if torch.all(agree == 0): return agree
+        # divide by the number of ys
+        n_preds = y.sum(axis=0)
+        score = agree / n_preds
+        # return
+        return score 
+    
+    def __call__(self, pred: torch.Tensor, y: torch.Tensor):
+        score = RecallMacro.score(pred, y, self.thresh)
+        return score.float().nanmean()
+
+class F1Macro():
+    def __init__(self, thresh=.5):
+        self.thresh = thresh
+    
+    def __call__(self, pred: torch.Tensor, y: torch.Tensor):
+        prec = PrecisionMacro.score(pred, y, self.thresh)
+        rec = RecallMacro.score(pred, y, self.thresh)
+
+        prec = torch.where(torch.isnan(prec), 0, prec)
+        rec = torch.where(torch.isnan(rec), 0, rec)
+
+        f1 = 2*prec*rec/(prec + rec)
+        # consider only the birds which were present in preds or in y
+        ids = torch.argwhere(torch.logical_or(y > 0, pred > self.thresh))
+        # preds to consider
+        f1 = torch.stack(
+            [
+                f1[a] for a in ids[:, 1]
+            ], 
+            axis=-1
+        )
+
+
+        # F1 is nan if and only if prec==rec==0. In this case, we set it to 0. 
+        f1 = torch.where(torch.isnan(f1), 0, f1)
+        return f1.float().nanmean()

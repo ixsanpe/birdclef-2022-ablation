@@ -25,19 +25,21 @@ class EpochLogger(Logger):
         self.epoch = epoch 
         self.metrics = metrics
         self.running_train_loss = 0.
+        self.i = 0
         self.trainer = trainer
         self.val_buffer = {}
         self.val_reports = {}
         if trainer.verbose:
             print(f'starting epoch {epoch}')
 
-    def train_report(self, i):
-        print(f'iteration {i}\t runnning loss {self.running_train_loss / (i+1) :.3f}\n')
+    def train_report(self, ):
+        print(f'iteration {self.i}\t runnning loss {self.running_train_loss / (self.i+1) :.3f}\n')
 
     def train_update(self, loss):
         """
         Update training progression. Currently only tracking loss
         """
+        self.i = self.i + 1
         self.running_train_loss += loss.item()
             
     def val_report(self, i: int): 
@@ -113,7 +115,8 @@ class EpochLogger(Logger):
         """
         do some final computations/reporting at the end of the epoch
         """
-        self.running_train_loss = self.running_train_loss / len(loader)
+        # self.running_train_loss = self.running_train_loss / len(loader)
+        assert self.i == len(loader)
         if self.trainer.verbose:
             print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss :.3f}\n')
 
@@ -239,7 +242,7 @@ class TrainLogger(Logger):
             pred_ranking = [print_probability_ranking(pred) for pred in preds]
             y_ranking = [print_probability_ranking(y) for y in ys]
             stats = {
-                'train_loss': last_epoch.running_train_loss, 
+                'train_loss': last_epoch.running_train_loss / last_epoch.i, 
                 'val_loss': last_epoch.validation_loss(), 
                 'pred_ranking': pred_ranking, 
                 'y_ranking': y_ranking
