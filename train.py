@@ -23,7 +23,7 @@ from decouple import config
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
-SPLIT_PATH = 'splits/'
+SPLIT_PATH = config("SPLIT_PATH")
 
 
 LOCAL_TEST = False
@@ -56,7 +56,7 @@ def main():
     num_classes = len(birds)
 
     df_train = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
-    df_val = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
+    df_val = pd.read_csv(f'{SPLIT_PATH}val_metadata.csv')[:N]
 
     # Datasets, DataLoaders
     #train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
