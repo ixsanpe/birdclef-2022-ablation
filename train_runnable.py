@@ -134,7 +134,7 @@ def main():
     train_data = data_class(df_train, SPEC_PATH, mode='train', labels=birds)
     val_data = data_class(df_val, SPEC_PATH, mode='train', labels=birds)    
 
-    train_selector = Selector(duration=max_duration, offset=offset_train, device=device)
+    train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') #device=device
 
     train_loader = DataLoader(
         train_data, 
@@ -188,7 +188,7 @@ def main():
     transforms2 = TransformApplier(
         check_args(transforms2, args)
     )
-    #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
+
     
     wav2spec = nn.Identity() if precompute else Wav2Spec()
 
