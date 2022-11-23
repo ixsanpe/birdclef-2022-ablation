@@ -124,8 +124,8 @@ class Trainer(nn.Module):
             self.train_logger.finish_epoch() # report to wandb etc 
 
         # At the end of training: Save model and training curve
-        # self.model_saver.save_final_model(epochs, self.model, self.optimizer, self.criterion) TODO
-        # self.model_saver.save_plots(train_loss, val_loss)
+        self.model_saver.save_final_model(epochs, self.model, self.optimizer, self.criterion)
+
 
   
 

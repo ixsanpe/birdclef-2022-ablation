@@ -1,6 +1,7 @@
 import torchaudio.transforms as T
 import torch.nn as nn 
-class SpecAugment(nn.Module):
+import torch
+'''class SpecAugment(nn.Module):
     def __init__(self):
         #self.spec=spec
         super().__init__()
@@ -21,5 +22,30 @@ class SpecAugment(nn.Module):
         time_masking = T.TimeMasking(time_mask_param=time_mask_param)
         freq_masking = T.FrequencyMasking(freq_mask_param=freq_mask_param)
         return time_masking(freq_masking(stretch(x,rate)))
-    def forward(self,x):
-        return self.time_masking(self.freq_masking(self.time_stretching(x)))
+    def forward(self, d: dict):
+        #d['x']=self.time_masking(self.freq_masking(self.time_stretching(d['x'],rate=1.2),freq_mask_param=80),time_mask_param=80)
+        d['x']=T.TimeMasking(T.FrequencyMasking(T.TimeStretch(d['x'],rate=1.2),freq_mask_param=80),time_mask_param=80)'''
+
+
+#taken from https://pytorch.org/audio/stable/transforms.html, still basic
+class SpecAugment(nn.Module):
+    def __init__(
+        self,
+        input_freq=16000,
+        resample_freq=8000,
+        n_fft=1024,
+        n_mel=256,
+        stretch_factor=0.8
+    ):
+        super().__init__()
+        self.spec_aug = torch.nn.Sequential(
+                T.TimeStretch(stretch_factor, fixed_rate=True),
+                T.FrequencyMasking(freq_mask_param=80),
+                T.TimeMasking(time_mask_param=80),
+            )
+    def forward(self, d: dict):
+        #print(d['x'].shape)
+        d['x']= self.spec_aug(d['x'])
+        #print(d['x'].shape)
+        #print(d['x']==None)
+        return d
