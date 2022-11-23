@@ -10,15 +10,16 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 5, 
-        'N': 100, 
-        'wandb': False, 
-        'project_name': 'AblationDebug',
+        'epochs': 10, 
+        'N': -1, 
+        'wandb': True, 
+        'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + str(int(time.time())), 
         'sr': 1, 
         'max_duration': 500,
         'duration': 500, 
         'batch_size_train': 16, 
+        'batch_size_val': 1, 
         'validate_every': 150, 
         'precompute': 'True', 
         'n_splits': 5,
@@ -31,7 +32,7 @@ def main():
     # TODO: add alternatives below!
     sweeping = { # first argument is the default, then it makes a run for each alternative
         'model_name': ['efficientnet_b2', 'resnet34', 'eca_nfnet_l0'], 
-        #'loss': ['focal','bce']
+        #'loss': ['BCELoss', 'FocalLoss',]
         # 'learning_rate': [1e-3, 1e-2, 1e-4] # Just as an example, we could have done this too
     }
     default_bool = False # whether to include each module in modules by default
