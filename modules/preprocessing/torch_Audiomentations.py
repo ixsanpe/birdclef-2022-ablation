@@ -11,6 +11,9 @@ class torch_Audiomentations(nn.Module):
         self.augment=tam.Compose(self.transformations)  
 
     def forward(self, d: dict):
-        d['x'] = self.augment(d['x'], sample_rate=self.sample_rate)
+        t=d['x'].reshape([d['x'].shape[0],1,d['x'].shape[1]])
+        c = self.augment(t, sample_rate=self.sample_rate)
+        #d['x'] = self.augment(d['x'], sample_rate=self.sample_rate)
+        d['x']=c.reshape([d['x'].shape[0],d['x'].shape[1]])
         return d 
 

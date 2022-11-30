@@ -82,25 +82,6 @@ def main():
         shuffle=False, 
         pin_memory=True
     )
-
-
-    # create model
-    transforms1_train = TransformApplier(
-        [ 
-            # SelectSplitData(duration, n_splits, offset=None), 
-            SelectSplitData(duration, n_splits, offset=0., sr=100)
-            # add more transforms here
-        ]
-    )
-
-    transforms1_val = TransformApplier(
-        [ 
-            # SelectSplitData(duration, n_splits, offset=0.), 
-            SelectSplitData(duration, n_splits, offset=0., sr=100), 
-            # add more transforms here
-        ]
-    )
-
     augment = [
             tam.Gain(
             min_gain_in_db=-15.0,
@@ -109,14 +90,34 @@ def main():
             tam.PolarityInversion(p=0.5)
         ]
 
+
+    # create model
+    transforms1_train = TransformApplier(
+        [ 
+            # torch_Audiomentations(augment), # AUG
+            # SelectSplitData(duration, n_splits, offset=None),
+            SelectSplitData(duration, n_splits, offset=0., sr=100)
+            # add more transforms here
+        ]
+    )
+
+    transforms1_val = TransformApplier(
+        [
+            # torch_Audiomentations(augment), # AUG
+            # SelectSplitData(duration, n_splits, offset=0.),
+            SelectSplitData(duration, n_splits, offset=0., sr=100), 
+            # add more transforms here
+        ]
+    )
+
+
     transforms2 = TransformApplier(
         [
             # torch_Audiomentations(augment),
             InstanceNorm()
         ]
     )
-    #TODO: audiomentations has better transformations than torch.audiomentations, do we find a way to use it on gpu?
-    
+
     data_pipeline_train = nn.Sequential(
         transforms1_train, 
         # wav2spec_train,
