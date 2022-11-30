@@ -20,6 +20,7 @@ import warnings
 import torch_audiomentations as tam
 from decouple import config
 
+
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
