@@ -1,5 +1,6 @@
-birdclef-2022/*
-venv/*
+birdclef-2022/
+venv/
+misc_testing/
 kaggle-birdclef2021-2nd-place/
 *.pyc
 *.ipynb
@@ -18,7 +19,6 @@ subscript.sh
 scratch.py
 .idea/
 .env
-misc_testing/
 archived_code/
 misc_testing/test.ipynb
 misc_testing/test.py
