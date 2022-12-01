@@ -1,29 +1,21 @@
-from archived_code.simple_cnn import * 
-import matplotlib.pyplot as plt 
+from modules import SelectSplitData, RejoinSplitData 
+import torch 
+import numpy as np
 
-if __name__ == '__main__':
-    w_in = 4096
-    conv_depth = 1
-    w2i = Wav2Spec()
-    
-    input = torch.normal(0, 1, (1, w_in))
-    img = w2i(input)
+bs = 32
+N = 64
+split = 4
+dim = 4
+input = [[np.arange(N+i) for i in range(dim)]]*bs
+input = torch.tensor(input)
+input_dict = {'x': input, 'lens': torch.tensor([N]*bs)}
+print(f'{input.shape=}')
 
-    plt.imshow(img.squeeze().numpy())
-    plt.show()
+ssd = SelectSplitData(duration=N, sr=1, n_splits=split, offset=0.)
+temp = ssd(input_dict)
+print(f'{temp["x"].shape=}')
 
-    w_in = img.shape[-1]
-    h_in = img.shape[-2]
-
-    model = WavImgCNN(
-        conv_depth=conv_depth, 
-        kernel_sizes=[3]*conv_depth, 
-        pool_kernel_sizes=[2]*conv_depth,
-        strides=[1]*conv_depth, 
-        w_in=w_in, 
-        h_in=h_in, 
-        n_channels=[1]*(conv_depth+1), 
-        fc_dims=[10], 
-        paddings=None
-    )
-    print(model(input))
+rsd = RejoinSplitData(duration=N//split, sr=1, n_splits=split, offset=0.)
+rejoined = rsd(temp["x"])
+print(f'{rejoined.shape=}')
+print(rejoined)

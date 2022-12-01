@@ -18,4 +18,8 @@ subscript.sh
 scratch.py
 .idea/
 .env
-misc_testing/*
+misc_testing/
+archived_code/
+misc_testing/test.ipynb
+misc_testing/test.py
+.ipynb_checkpoints

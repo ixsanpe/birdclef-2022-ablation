@@ -79,13 +79,16 @@ class Ablator():
         for module in self.modules:
             # print(f'\n\nChanging {module=}\n\n')
             run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[module])
-            run(**kwargs)
+            alternative_kwargs = kwargs.copy()
+            alternative_kwargs['experiment_name'] = f'{module}_{not self.default_bool}_{kwargs["experiment_name"]}'
+            run(**alternative_kwargs)
         # Change other alternatives like model_name/learning rate
         for sweep, alternatives in self.sweeping.items():
-            for alternative in alternatives[1:]: # skip the default, we already tried it
+            for alternative in alternatives: # skip the default, we already tried it
                 # print(f'\n\nChanging {sweep=}\n\n')
                 run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[])
                 alternative_kwargs = kwargs.copy()
                 alternative_kwargs[sweep] = alternative
+                alternative_kwargs['experiment_name'] = f'{sweep}_{alternative}_{kwargs["experiment_name"]}'
                 run(**alternative_kwargs)
         
