@@ -2,10 +2,10 @@ import numpy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from modules.training.compute_loss_weights import compute_loss_weights
+from modules.training.ComputeLossWeights import ComputeLossWeights
 import numpy as np
 
-weights = compute_loss_weights(beta=0.99).forward()
+weights = ComputeLossWeights(beta=0.99).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
 
 
