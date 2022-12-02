@@ -9,7 +9,7 @@ weights = ComputeLossWeights(beta=0.99).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
 
 
-class Weighted_BCE_Loss(nn.Module):
+class WeightedBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(Weighted_BCE_Loss, self).__init__()
 
