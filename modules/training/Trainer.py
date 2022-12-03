@@ -62,7 +62,7 @@ class Trainer(nn.Module):
         """
         Perform validation and log it to the epoch_logger
         """
-        
+        # try:
         with torch.no_grad():
             for d_v in val_loader:
                 y_v_logits, y_v = self.validator(d_v)
@@ -70,7 +70,8 @@ class Trainer(nn.Module):
                 epoch_logger.register_val(i, y_v_pred, y_v) 
 
         epoch_logger.val_report(i)
-
+        # except Exception as e:
+        #     print('\n\n\n\n\n\n\nFAILED!!!\n\n\n\n\n\n\n\n\n\n')
     def step(self, d):
         logits, y = self.forward_item(d)
         y_pred = torch.sigmoid(logits)
@@ -100,6 +101,7 @@ class Trainer(nn.Module):
             
 
             for i, d in enumerate(train_loader):
+                assert epoch_logger.i == i, print(f'{i=}{epoch_logger.i=}')
                 
                 # optimization step
                 loss = self.step(d)
@@ -110,6 +112,7 @@ class Trainer(nn.Module):
                     epoch_logger.train_report()
                     self.validate(epoch_logger, val_loader, i)
                     self.train_logger.wandb_report() # report to wandb etc 
+                
 
             if validate_every == -1 or i < validate_every + 1:
                 epoch_logger.train_report()

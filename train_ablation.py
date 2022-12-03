@@ -1,5 +1,6 @@
 from ablation import Ablator 
 import time 
+from datetime import datetime 
 """
 This script runs an ablation study.
 To that end, it calls train_runnable.py with different parameters.
@@ -13,8 +14,8 @@ def main():
         'epochs': 10, 
         'N': -1, 
         'wandb': True, 
-        'project_name': 'AblationTest',
-        'experiment_name': 'ablation_' + str(int(time.time())), 
+        'project_name': 'AblationDebug',
+        'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
         'max_duration': 500,
         'duration': 500, 
@@ -24,18 +25,22 @@ def main():
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
+        'model_name': 'efficientnet_b2'
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
-        # 'InstanceNorm', 
+        'InstanceNorm', 
     ]
+
     # TODO: add alternatives below!
-    sweeping = { # first argument is the default, then it makes a run for each alternative
-        'model_name': ['efficientnet_b2', 'resnet34', 'eca_nfnet_l0'], 
-        #'loss': ['BCELoss', 'FocalLoss',]
-        # 'learning_rate': [1e-3, 1e-2, 1e-4] # Just as an example, we could have done this too
+    sweeping = { # Specify the alternatives to the default. These are tried one by one. 
+        'model_name': ['resnet34', 'eca_nfnet_l0'], 
+        'loss': ['FocalLoss',], 
+        'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
     }
+
     default_bool = False # whether to include each module in modules by default
+
     """
     Ablator runs ablation studies as follows:
     if run_reference: run a reference run with default parameters
@@ -52,7 +57,7 @@ def main():
     Finally, it goes through sweep and tries the specified values, except the first, 
     which is the default value. This value we have already tried!
     Example:
-        sweep = {learning_rate: [1, 2, 3], model_name: [resnet, vgg_net]}
+        sweep = {learning_rate: [2, 3], model_name: [vgg_net]}
         Run     learning_rate       model_name
         1.      2                   resnet (default)
         2.      3                   resnet (default)
@@ -65,7 +70,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=False, **kwargs)
+    ablator(run_reference=True, **kwargs)
 
      
 
