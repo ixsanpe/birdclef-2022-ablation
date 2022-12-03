@@ -182,7 +182,6 @@ class Validator():
             logits = self.compute_logits(logits_buffer)
             """
 
-            #return logits, d['y'].float()
             return logits.to(self.device), d['y'].float().to(self.device)
 
         else:

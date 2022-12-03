@@ -76,7 +76,7 @@ class PickyScore():
             num_labels=num_classes, 
             topk = 1, 
             average='macro' 
-        )#.to(self.device) 
+        )
         # Compute the score
         retval = score(test_pred, test_y)
         return retval 
