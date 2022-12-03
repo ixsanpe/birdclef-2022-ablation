@@ -132,10 +132,10 @@ def main():
         data_class = SpecDataset
     else:
         data_class = SimpleDataset
-    train_data = data_class(df_train, SPEC_PATH, mode='train', labels=birds)
-    val_data = data_class(df_val, SPEC_PATH, mode='train', labels=birds)    
+    train_data = data_class(df_train, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)
+    val_data = data_class(df_val, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)    
 
-    train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') #device=device
+    train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') 
 
     train_loader = DataLoader(
         train_data, 

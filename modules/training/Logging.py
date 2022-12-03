@@ -33,7 +33,7 @@ class EpochLogger(Logger):
             print(f'starting epoch {epoch}')
 
     def train_report(self, ):
-        print(f'iteration {self.i}\t runnning loss {self.running_train_loss / (self.i+1) :.3f}\n')
+        print(f'iteration {self.i}\t runnning loss {self.running_train_loss / self.i :.3f}\n')
 
     def train_update(self, loss):
         """
@@ -115,10 +115,9 @@ class EpochLogger(Logger):
         """
         do some final computations/reporting at the end of the epoch
         """
-        # self.running_train_loss = self.running_train_loss / len(loader)
         assert self.i == len(loader)
         if self.trainer.verbose:
-            print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss :.3f}\n')
+            print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss/self.i :.3f}\n')
 
 class WandbLogger(Logger):
     def __init__(

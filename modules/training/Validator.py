@@ -13,6 +13,7 @@ class Validator():
             model, 
             device: str, 
             overlap: float=.5, 
+            bs_max=32,
             policy: Callable=lambda l: torch.stack(l, axis=-1).max(axis=-1).values
         ):
         """
@@ -25,6 +26,8 @@ class Validator():
                 model to make predictions
             overlap:
                 how much the windows should overlap when computing the predictions
+            bs_max:
+                when validating, what is the maximum allowed batch size
             policy:
                 A function that defines how to compute the final predictions from the predictions
                 of the individual segments
@@ -36,6 +39,7 @@ class Validator():
         self.overlap = overlap
         self.policy = policy
         self.device = device
+        self.bs_max = bs_max
 
         # check for splitting data
         self.data_splitter = None 
@@ -57,6 +61,71 @@ class Validator():
         transform_appliers = [e for e in list(to_check) if isinstance(e, TransformApplier)]
         return any([self.find_data_splitter(applier) for applier in transform_appliers])
     
+    def predict_rolling(self, d_copy, skip, N_segments, n_duration, offset=0):
+        
+        copies = [torch.roll(d_copy['x'], shifts=(offset+i)*skip, dims=-1)[..., :ceil(n_duration)] for i in range(N_segments)]
+        
+        """
+        make a tensor like 
+        [
+          batch1 shift1, 
+          batch2 shift1, 
+          ..., 
+          batchn shift1, 
+          
+          batch1 shift2, 
+          ..., 
+          batchn shift2, 
+             
+          ...
+          
+          batch1 shiftN, ...
+        ]
+        """
+        
+        copies = torch.concat(copies, axis=0)
+        
+        """
+        To facilitate quicker execution, we pretend that each offset audio file is its own "batch"
+
+        the batch size here does not exceed self.bs_max
+        """
+        for k, v in d_copy.items():
+            if k == 'x':
+                d_copy['x'] = copies 
+            else:
+                if isinstance(v, torch.Tensor):
+                    d_copy[k] = torch.concat([v]*N_segments, axis=0)
+                elif isinstance(v, list):
+                    d_copy[k] = [v]*N_segments
+        logits = self.forward_item(d_copy)[0] # preds for (b1s1, b2s1, ..., b1s2, ..., b1sN, ...)
+        return logits 
+
+    def predict(self, bs, d_copy, skip, N_segments, n_duration):
+        outputs = []
+        # for this operation we require divisibility
+        if self.bs_max % bs != 0:
+            self.bs_max = self.bs_max - self.bs_max % bs
+
+        N_iterations = ceil(bs*N_segments / self.bs_max)
+        for i in range(N_iterations):
+            outputs.append(self.predict_rolling(
+                d_copy.copy(), 
+                skip, 
+                N_segments=min( # limit output to max_bs. But make sure we don't take too much using the max
+                    [(self.bs_max//bs), max([N_segments - i*(self.bs_max//bs), 0])]
+                ), 
+                n_duration=n_duration, 
+                offset=i*self.bs_max
+            ))
+        # now outputs is a list of lists. outputs[i] = list of length self.bs_max//bs, containing
+        # the predictions for the i to i+1-th chunks of size self.bs_max//bs. To recover a list 
+        # in the form (b1s1, b2s1, ..., b1s2, ..., b1sN, ...), we can simply append, since we 
+        # preserve the format that we predict on every batch and then increase the offset.
+        result = torch.stack([p for sublist in outputs for p in sublist], axis=0)
+
+        return result
+
     def __call__(self, d: dict):
         if self.data_splitter is not None:
             data_splitter = self.data_splitter
@@ -84,10 +153,25 @@ class Validator():
 
             skip = ceil(n_timepoints // N_segments)# skip to do in each iteration
 
-            logits_buffer = []
-
             # compute for each block of time
             d_copy = deepcopy(d)
+
+            
+            bs = d['x'].shape[0] # batch size
+            logits = self.predict(bs, d_copy, skip, N_segments, n_duration)
+
+            offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, ))
+            lens = torch.concat([d['lens']]*N_segments, axis=0)
+            logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits)
+            # make a list of length N_segments where each element corresponds to 
+            # predicting on the ith shifted version of x. 
+            logits_buffer = [logits[i*bs:(i+1)*bs] for i in range(N_segments)]
+            logits = self.compute_logits(logits_buffer)
+            
+
+            """
+            # Old code kept for safety reasons
+            logits_buffer = []
             for i in range(N_segments):
                 offset = skip * i # skip i windows
                 d['x'] = torch.roll(d_copy['x'], shifts=(offset), dims=-1)
@@ -97,6 +181,7 @@ class Validator():
                 logits_buffer.append(logits)
             
             logits = self.compute_logits(logits_buffer)
+            """
 
             return logits, d['y'].float()
 
