@@ -158,11 +158,10 @@ class Validator():
 
             
             bs = d['x'].shape[0] # batch size
-            logits = self.predict(bs, d_copy, skip, N_segments, n_duration)
-
-            offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, ))
-            lens = torch.concat([d['lens']]*N_segments, axis=0)
-            logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits)
+            logits = self.predict(bs, d_copy, skip, N_segments, n_duration).to(self.device)
+            offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, )).to(self.device)
+            lens = torch.concat([d['lens']]*N_segments, axis=0).to(self.device)
+            logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits).to(self.device)
             # make a list of length N_segments where each element corresponds to 
             # predicting on the ith shifted version of x. 
             logits_buffer = [logits[i*bs:(i+1)*bs] for i in range(N_segments)]
@@ -183,7 +182,8 @@ class Validator():
             logits = self.compute_logits(logits_buffer)
             """
 
-            return logits, d['y'].float()
+            #return logits, d['y'].float()
+            return logits.to(self.device), d['y'].float().to(self.device)
 
         else:
             return self.forward_item(d)

@@ -29,13 +29,13 @@ def main():
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
-        'InstanceNorm', 
+       # 'InstanceNorm', 
     ]
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
         'model_name': ['resnet34', 'eca_nfnet_l0'], 
-        'loss': ['FocalLoss',], 
+        'loss': ['FocalLoss'], 
         'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
     }
 
@@ -53,7 +53,13 @@ def main():
         2.     False       True        False
         3.     False       False       True
         Here, True indicates that the module is included, and False otherwise
-    
+        
+    The sequence will be (assuming run_reference=True):
+        1. default parameters
+        2. Instance norm stuff
+        3. change model to resnet
+        4. change model to eca_nfnet_10
+        5. FocalLoss
     Finally, it goes through sweep and tries the specified values, except the first, 
     which is the default value. This value we have already tried!
     Example:
@@ -70,7 +76,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=True, **kwargs)
+    ablator(run_reference=False, **kwargs)
 
      
 
