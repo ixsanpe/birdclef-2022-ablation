@@ -67,8 +67,8 @@ def augment_data(transformations):
 
     return 0
 
-
-augment = [
+#This is just to test whether it works
+'''augment = [
         am.Gain(
         min_gain_in_db=-15.0,
         max_gain_in_db=5.0,
@@ -76,4 +76,4 @@ augment = [
         tam.PolarityInversion(p=0.5)
     ]
 
-t=augment_data(augment)
+t=augment_data(augment)'''
