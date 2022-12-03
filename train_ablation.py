@@ -29,13 +29,13 @@ def main():
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
-       # 'InstanceNorm', 
+       #'InstanceNorm', 
     ]
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
+        'loss': ['WeightedBCELoss'], 
         'model_name': ['resnet34', 'eca_nfnet_l0'], 
-        'loss': ['FocalLoss'], 
         'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
     }
 
