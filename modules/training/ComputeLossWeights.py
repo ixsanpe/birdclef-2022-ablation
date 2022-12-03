@@ -38,16 +38,27 @@ class ComputeLossWeights():
         labels = np.concatenate([primary_labels, secondary_labels])
         labels = np.delete(labels, np.argwhere(labels == ''))
 
-        '''counts=[0]*len(self.birds)
+        counts=[0]*len(self.birds)
         i=0
         for bird in self.birds:
             counts[i]=max(sum(labels==bird),1) #needed for computing weigths later
-            i=i+1'''
+            i=i+1
 
-        counts = primary_labels.sum(axis=-1) + secondary_labels.sum(axis=-1)
+        #counts = primary_labels.sum(axis=-1) + secondary_labels.sum(axis=-1)
 
         #Now, compute weights for the loss as described in https://towardsdatascience.com/handling-class-imbalanced-data-using-a-loss-specifically-made-for-it-6e58fd65ffab
         counts=np.array(counts)
         weights=(1-self.beta)/(1-self.beta**counts)#*10000
         weights1 = weights/max(weights)
         return weights1
+
+#checking the impact of beta
+'''weights1=ComputeLossWeights(beta=0.9).forward()
+weights2=ComputeLossWeights(beta=0.99).forward()
+weights3=ComputeLossWeights(beta=0.999).forward()
+weights4=ComputeLossWeights(beta=0.9999).forward()
+#print(ComputeLossWeights(beta=0.99).forward())
+print(max(weights1)/min(weights1))
+print(max(weights2)/min(weights2))
+print(max(weights3)/min(weights3))
+print(max(weights4)/min(weights4))'''
