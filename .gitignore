@@ -23,3 +23,4 @@ archived_code/
 misc_testing/test.ipynb
 misc_testing/test.py
 .ipynb_checkpoints
+*.out
