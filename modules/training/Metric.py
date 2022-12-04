@@ -1,6 +1,8 @@
 from typing import Callable, Optional
 import torch 
 
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class Metric():
     def __init__(self, name: str, metric: Callable):
         """
@@ -76,7 +78,7 @@ class PickyScore():
             num_labels=num_classes, 
             topk = 1, 
             average='macro' 
-        ).to(self.device) 
+        )
         # Compute the score
         retval = score(test_pred, test_y)
         return retval 
@@ -91,7 +93,7 @@ class PrecisionMacro():
         # check where pred and y agree
         pred = torch.where(pred > thresh, 1, 0)
         y = torch.where(y > thresh, 1, 0)
-        if pred.sum() < 1: return torch.ones(y.shape[-1])
+        if pred.sum() < 1: return torch.ones(y.shape[-1]).to(DEVICE)
         agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
 
         if torch.all(agree == 0): return agree
@@ -115,7 +117,7 @@ class RecallMacro():
         # check where pred and y agree
         pred = torch.where(pred > thresh, 1, 0)
         y = torch.where(y > thresh, 1, 0)
-        if y.sum() < 1: return torch.ones(y.shape[-1])
+        if y.sum() < 1: return torch.ones(y.shape[-1]).to(DEVICE)
         agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
 
         if torch.all(agree == 0): return agree
