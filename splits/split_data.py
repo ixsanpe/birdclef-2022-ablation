@@ -56,12 +56,3 @@ metadata_augment = metadata.iloc[X_augment.squeeze()]
 #metadata_val.to_csv(f'{SPLIT_PATH}val_metadata.csv')
 #metadata_test.to_csv(f'{SPLIT_PATH}test_metadata.csv')
 #metadata_augment.to_csv(f'augment_metadata.csv')
-
-
-
-# %%
-augs = 'gain'
-aug_prob = 0.5
-spec_data = SpecDataset(metadata, SPEC_PATH, mode='train', labels=birds)
-aug_data = AugmentDataset(metadata, SPEC_PATH, AUGMENT_PATH, augmentations = [augs], mode='train', labels=birds, augment_prob=aug_prob)
-# %%
