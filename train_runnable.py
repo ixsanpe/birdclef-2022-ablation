@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=150)
     parser.add_argument('--precompute', type=s2b, default='True')
-    parser.add_argument('--augs', type='str', default='', help='Name of Augmentation; Possible choices: gain, gaussiannoise, timestrecht, pitchshift, shift, backgroundnoise. Only available for precompute=True')
+    parser.add_argument('--augs', type=str, default='', help='Name of Augmentation; Possible choices: gain, gaussiannoise, timestrecht, pitchshift, shift, backgroundnoise. Only available for precompute=True')
     parser.add_argument('--aug_prob', type=float, default=1.0)
 
     # Pipeline configuration
