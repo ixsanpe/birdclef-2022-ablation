@@ -84,7 +84,7 @@ class Ablator():
             run(**alternative_kwargs)
         # Change other alternatives like model_name/learning rate
         for sweep, alternatives in self.sweeping.items():
-            for alternative in alternatives: # skip the default, we already tried it
+            for alternative in alternatives: 
                 # print(f'\n\nChanging {sweep=}\n\n')
                 run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[])
                 alternative_kwargs = kwargs.copy()

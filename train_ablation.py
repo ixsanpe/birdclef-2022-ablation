@@ -11,17 +11,17 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 10, 
+        'epochs': 30, 
         'N': -1, 
-        'wandb': True, 
-        'project_name': 'AblationDebug',
+        'wandb': False, 
+        'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
         'max_duration': 500,
         'duration': 500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
-        'validate_every': 150, 
+        'validate_every': 1, 
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
@@ -34,8 +34,8 @@ def main():
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
-        'model_name': ['resnet34', 'eca_nfnet_l0'], 
         'loss': ['FocalLoss',], 
+        'model_name': ['resnet34', 'eca_nfnet_l0'], 
         'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
     }
 
@@ -54,8 +54,7 @@ def main():
         3.     False       False       True
         Here, True indicates that the module is included, and False otherwise
     
-    Finally, it goes through sweep and tries the specified values, except the first, 
-    which is the default value. This value we have already tried!
+    Finally, it goes through sweep and tries the specified values
     Example:
         sweep = {learning_rate: [2, 3], model_name: [vgg_net]}
         Run     learning_rate       model_name
@@ -70,7 +69,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=True, **kwargs)
+    ablator(run_reference=False, **kwargs)
 
      
 
