@@ -3,4 +3,6 @@ from .Metric import *
 from .train_utils import * 
 from .Trainer import * 
 from .Validator import *
-from .FocalLoss import FocalLoss
+from .FocalLoss import *
+from .WeightedBCELoss import *
+

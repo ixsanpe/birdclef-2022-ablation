@@ -196,8 +196,7 @@ class Validator():
             skip = ceil(n_timepoints // N_segments)# skip to do in each iteration
 
             # compute for each block of time
-            d_copy = deepcopy(d)
-            
+            d_copy = deepcopy(d)            
 
             if self.scheme == 'old':
                 logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d)
@@ -207,7 +206,7 @@ class Validator():
             logits = self.compute_logits(logits_buffer)
             
 
-            return logits, d['y'].float()
+            return logits.to(self.device), d['y'].float().to(self.device)
 
         else:
             return self.forward_item(d)
