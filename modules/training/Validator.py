@@ -15,7 +15,7 @@ class Validator():
             overlap: float=.5, 
             bs_max=32,
             policy: Callable=lambda l: torch.stack(l, axis=-1).max(axis=-1).values, 
-            scheme='old'
+            scheme='new'
         ):
         """
         Implements a validate function. We use a separate class for this to handle overlapping
@@ -32,6 +32,8 @@ class Validator():
             policy:
                 A function that defines how to compute the final predictions from the predictions
                 of the individual segments
+            scheme:
+                only for debugging purposes
         """
         super().__init__()
         self.data_pipeline = data_pipeline
@@ -156,7 +158,7 @@ class Validator():
                     [(self.bs_max//bs), max([N_segments - i*(self.bs_max//bs), 0])]
                 ), 
                 n_duration=n_duration, 
-                offset=i*self.bs_max//bs # in each step, we make this much progress and skip it next time
+                offset=i*(self.bs_max//bs) # in each step, we make this much progress and skip it next time
             ))
         # now outputs is a list of lists. outputs[i] = list of length self.bs_max//bs, containing
         # the predictions for the i to i+1-th chunks of size self.bs_max//bs. To recover a list 
