@@ -43,7 +43,7 @@ def parse_args():
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
     parser.add_argument('--batch_size_train', type=int, default=8)
-    parser.add_argument('--batch_size_val', type=int, default=8)
+    parser.add_argument('--batch_size_val', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
@@ -52,12 +52,13 @@ def parse_args():
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=150)
     parser.add_argument('--precompute', type=s2b, default='True')
+    parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
 
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=500, help='duration to train on')
     parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
     parser.add_argument('--sr', type=float, default=1, help='(effective) sample rate')
-    parser.add_argument('--n_splits', type=int, default=6)
+    parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--offset_val', type=float, default=0.)
     parser.add_argument('--offset_train', type=int, default=None)
     parser.add_argument('--model_name', type=str, default='efficientnet_b2')
@@ -250,7 +251,20 @@ def main():
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
-    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device, )
+    policies = {
+        'first_and_final': first_and_final,
+        'max_thresh': max_thresh, 
+        'max_all': max_all    
+    }
+    policy = policies[args.policy]
+
+    validator = Validator(
+        data_pipeline_val, 
+        model, 
+        overlap=overlap, 
+        device=device, 
+        policy=policy,
+    )
 
     metrics = [
         Metric(name, method) for name, method in metrics.items()
