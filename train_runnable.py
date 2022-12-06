@@ -20,12 +20,12 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision 
-import time
+from torchmetrics.classification import MultilabelF1Score
 import warnings
 
 import torch_audiomentations as tam
 from decouple import config
+from datetime import datetime
 
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
@@ -46,8 +46,8 @@ def parse_args():
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
     parser.add_argument('--batch_size_train', type=int, default=8)
-    parser.add_argument('--batch_size_val', type=int, default=8)
-    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--batch_size_val', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
     parser.add_argument('--loss', type=str, default='BCELoss')
@@ -55,22 +55,23 @@ def parse_args():
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=150)
     parser.add_argument('--precompute', type=s2b, default='True')
+    parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
 
     # Pipeline configuration
-    parser.add_argument('--duration', type=int, default=30, help='duration to train on')
-    parser.add_argument('--max_duration', type=int, default=30, help='how much of the data to load')
-    parser.add_argument('--sr', type=float, default=10)
-    parser.add_argument('--n_splits', type=int, default=6)
+    parser.add_argument('--duration', type=int, default=500, help='duration to train on')
+    parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
+    parser.add_argument('--sr', type=float, default=1, help='(effective) sample rate')
+    parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--offset_val', type=float, default=0.)
     parser.add_argument('--offset_train', type=int, default=None)
     parser.add_argument('--model_name', type=str, default='efficientnet_b2')
-    parser.add_argument('--InstanceNorm', type=s2b)# , default=default_bool)
+    parser.add_argument('--InstanceNorm', type=s2b)
     parser.add_argument('--SimpleAttention', type=s2b, default='True')
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
     parser.add_argument('--project_name', type=str, default='Baseline')
-    parser.add_argument('--experiment_name', type=str, default='baseline_'+str(int(time.time())))
+    parser.add_argument('--experiment_name', type=str, default='baseline_'+ datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
     return parser.parse_args()
 
@@ -101,7 +102,9 @@ def main():
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
+
     losses = {'BCELoss': nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss()}
+
     criterion = losses[args.loss]
 
     # Similarly define optimizers as losses
@@ -253,7 +256,20 @@ def main():
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
-    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device, )
+    policies = {
+        'first_and_final': first_and_final,
+        'max_thresh': max_thresh, 
+        'max_all': max_all    
+    }
+    policy = policies[args.policy]
+
+    validator = Validator(
+        data_pipeline_val, 
+        model, 
+        overlap=overlap, 
+        device=device, 
+        policy=policy,
+    )
 
     metrics = [
         Metric(name, method) for name, method in metrics.items()

@@ -108,7 +108,7 @@ class Trainer(nn.Module):
                 epoch_logger.train_update(loss)
 
                 # reporting etc
-                if i % validate_every == validate_every-1: 
+                if i % validate_every == validate_every-1 and validate_every > 0: 
                     epoch_logger.train_report()
                     self.validate(epoch_logger, val_loader, i)
                     self.train_logger.wandb_report() # report to wandb etc 
@@ -117,7 +117,7 @@ class Trainer(nn.Module):
             if validate_every == -1 or i < validate_every + 1:
                 epoch_logger.train_report()
                 self.validate(epoch_logger, val_loader, validate_every)
-                self.train_logger.wandb_report() # report to wandb etc 
+                # wandb below
                 
             if self.model_saver != None:
                 self.model_saver.save_best_model(epoch_logger.validation_loss(), epoch, self.model, self.optimizer, self.criterion)
