@@ -73,8 +73,10 @@ class Ablator():
         """
         # Do a run where everything is regular
         if run_reference:
+            alternative_kwargs = kwargs.copy()
+            alternative_kwargs['experiment_name'] = f'reference_{kwargs["experiment_name"]}'
             run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[])
-            run(**kwargs)
+            run(**alternative_kwargs)
         # include/exclude each module
         for module in self.modules:
             # print(f'\n\nChanging {module=}\n\n')
@@ -84,7 +86,7 @@ class Ablator():
             run(**alternative_kwargs)
         # Change other alternatives like model_name/learning rate
         for sweep, alternatives in self.sweeping.items():
-            for alternative in alternatives: # skip the default, we already tried it
+            for alternative in alternatives: 
                 # print(f'\n\nChanging {sweep=}\n\n')
                 run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[])
                 alternative_kwargs = kwargs.copy()
