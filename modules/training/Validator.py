@@ -6,6 +6,8 @@ import warnings
 from math import ceil
 from copy import deepcopy
 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class Validator():
     def __init__(
             self, 
@@ -202,9 +204,8 @@ class Validator():
                 logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d).to(self.device)
             
             else:
-                logits_buffer = self.batched_prediction(skip, N_segments, d_copy, d, n_duration).to(self.device)
-            logits = self.compute_logits(logits_buffer).to(self.device)
-            
+                logits_buffer = self.batched_prediction(skip, N_segments, d_copy, d, n_duration)
+            logits = self.compute_logits(logits_buffer)
 
             return logits.to(self.device), d['y'].float().to(self.device)
 
@@ -220,7 +221,7 @@ class Validator():
             list whose i-th element is the prediction for the i-th segment
         """
         bs = d['x'].shape[0] # batch size
-        logits = self.predict(bs, d_copy, skip, N_segments, n_duration)
+        logits = self.predict(bs, d_copy, skip, N_segments, n_duration).to(self.device)
 
         # logits has shape (batch:segment1, ..., batch:segmentK)
         offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, )).to(self.device)
@@ -280,18 +281,18 @@ def first_and_final(l):
     Base predictions on first and final windows of prediction only
     """
     relevant = [l[0], l[-1]]
-    return torch.stack(relevant, axis=-1).mean(axis=-1).to(self.device)
+    return torch.stack(relevant, axis=-1).mean(axis=-1).to(DEVICE)
 
 def max_all(l):
     """
     Take the max of each window as the prediction
     """
-    return torch.stack(l, axis=-1).max(axis=-1).values.to(self.device)
+    return torch.stack(l, axis=-1).max(axis=-1).values.to(DEVICE)
 
 def max_thresh(l, thresh=-1):
     """
     Take the max over each window if it exceeds a threshold of thresh
     """
     res = max_all(l)
-    return torch.where(res > thresh, res, -torch.inf).to(self.device)
+    return torch.where(res > thresh, res, -torch.inf.to(DEVICE)).to(DEVICE)
 
