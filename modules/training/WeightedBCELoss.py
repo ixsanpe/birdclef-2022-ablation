@@ -5,13 +5,13 @@ import torch.nn.functional as F
 from modules.training.ComputeLossWeights import ComputeLossWeights
 import numpy as np
 
-weights = ComputeLossWeights(beta=0.99).forward()
+weights = ComputeLossWeights(beta=0.9).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
 
 
 class WeightedBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
-        super(Weighted_BCE_Loss, self).__init__()
+        super(WeightedBCELoss, self).__init__()
 
     def forward(self, inputs, targets, smooth=1):
         

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from modules.training.ComputeLossWeights import ComputeLossWeights
 import numpy as np
 
-weights = ComputeLossWeights(beta=0.99).forward()
+weights = ComputeLossWeights(beta=0.9).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
 
 
@@ -62,7 +62,7 @@ GAMMA = 2
 
 class WeightedFocalLoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
-        super(FocalLoss, self).__init__()
+        super(WeightedFocalLoss, self).__init__()
 
     def forward(self, inputs, targets, alpha=ALPHA, gamma=GAMMA, smooth=1):
         
