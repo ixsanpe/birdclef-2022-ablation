@@ -1,3 +1,5 @@
+
+
 """
 Train a pipeline 
 """
@@ -8,7 +10,7 @@ from modules.training.train_utils import *
 from modules.training.Trainer import Trainer, Metric
 from modules.training.FocalLoss import FocalLoss 
 from modules.training.WeightedBCELoss import WeightedBCELoss
-# from modules import PickyScore
+from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
 
 
@@ -20,7 +22,7 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchmetrics.classification import MultilabelF1Score
+from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
 import warnings
 
 import torch_audiomentations as tam
@@ -45,7 +47,7 @@ def parse_args():
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
-    parser.add_argument('--batch_size_train', type=int, default=8)
+    parser.add_argument('--batch_size_train', type=int, default=16)
     parser.add_argument('--batch_size_val', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
@@ -53,13 +55,14 @@ def parse_args():
     parser.add_argument('--loss', type=str, default='BCELoss')
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
-    parser.add_argument('--validate_every', type=int, default=150)
+    parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
+    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up validator but seems buggy')
 
     # Pipeline configuration
-    parser.add_argument('--duration', type=int, default=500, help='duration to train on')
-    parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
+    parser.add_argument('--duration', type=int, default=1000, help='duration to train on')
+    parser.add_argument('--max_duration', type=int, default=1000, help='how much of the data to load')
     parser.add_argument('--sr', type=float, default=1, help='(effective) sample rate')
     parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--offset_val', type=float, default=0.)
@@ -70,7 +73,7 @@ def parse_args():
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
-    parser.add_argument('--project_name', type=str, default='Baseline')
+    parser.add_argument('--project_name', type=str, default='AblationTest')
     parser.add_argument('--experiment_name', type=str, default='baseline_'+ datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
     return parser.parse_args()
@@ -246,12 +249,18 @@ def main():
     metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
     metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
     metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
-
+    #metric_f1_old = PickyScore(MultilabelF1Score).to(device)
+    #metric_recall_old = PickyScore(MultilabelRecall).to(device)
+    #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
+    
     metrics = {
                 'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
                 'RecallOurs': metric_recall_ours,
-                'PrecisionOurs': metric_prec_ours, 
+                'PrecisionOurs': metric_prec_ours,
+                #'F1_old': metric_f1_old,
+                #'Recall_old': metric_recall_old,
+                #'Precision_old': metric_prec_old, 
             }
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
@@ -269,6 +278,7 @@ def main():
         overlap=overlap, 
         device=device, 
         policy=policy,
+        scheme=args.scheme
     )
 
     metrics = [

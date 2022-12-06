@@ -11,7 +11,7 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 30, 
+        'epochs': 10, 
         'N': -1, 
         'wandb': True, 
         'project_name': 'AblationTest',
@@ -34,10 +34,11 @@ def main():
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
-        'loss': ['WeightedBCELoss',], 
-        'model_name': ['resnet34', 'eca_nfnet_l0'], 
-        'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
-        'policy': ['max_thresh', 'first_and_final']
+        # 'loss': ['WeightedBCELoss',], 
+        # 'model_name': ['resnet34', 'eca_nfnet_l0'], 
+        # 'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
+        'scheme': ['new'], 
+        'policy': ['first_and_final', 'max_thresh',]
     }
 
     default_bool = False # whether to include each module in modules by default

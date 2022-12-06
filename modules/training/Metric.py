@@ -91,8 +91,8 @@ class PrecisionMacro():
     def score(pred: torch.Tensor, y: torch.Tensor, thresh=.5):
         assert pred.shape == y.shape 
         # check where pred and y agree
-        pred = torch.where(pred > thresh, 1, 0)
-        y = torch.where(y > thresh, 1, 0)
+        pred = torch.where(pred.double() > thresh, 1, 0)
+        y = torch.where(y.double() > thresh, 1, 0)
         if pred.sum() < 1: return torch.ones(y.shape[-1]).to(DEVICE)
         agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
 
@@ -115,8 +115,8 @@ class RecallMacro():
     def score(pred: torch.Tensor, y: torch.Tensor, thresh=.5):
         assert pred.shape == y.shape 
         # check where pred and y agree
-        pred = torch.where(pred > thresh, 1, 0)
-        y = torch.where(y > thresh, 1, 0)
+        pred = torch.where(pred.double() > thresh, 1, 0)
+        y = torch.where(y.double() > thresh, 1, 0)
         if y.sum() < 1: return torch.ones(y.shape[-1]).to(DEVICE)
         agree = torch.sum(torch.where(torch.logical_and(pred==y, y > 0), 1, 0), axis=0)
 
@@ -139,8 +139,8 @@ class F1Macro():
         prec = PrecisionMacro.score(pred, y, self.thresh)
         rec = RecallMacro.score(pred, y, self.thresh)
 
-        prec = torch.where(torch.isnan(prec), 0, prec)
-        rec = torch.where(torch.isnan(rec), 0, rec)
+        prec = torch.where(torch.isnan(prec), 0., prec.double())
+        rec = torch.where(torch.isnan(rec), 0., rec.double())
 
         f1 = 2*prec*rec/(prec + rec)
         # consider only the birds which were present in preds or in y
@@ -155,5 +155,5 @@ class F1Macro():
 
 
         # F1 is nan if and only if prec==rec==0. In this case, we set it to 0. 
-        f1 = torch.where(torch.isnan(f1), 0, f1)
+        f1 = torch.where(torch.isnan(f1), 0., f1)
         return f1.float().nanmean()

@@ -55,7 +55,7 @@ class EpochLogger(Logger):
 
         for metric in self.metrics:
             metric_buffer[metric.name].append(metric(pred, y))
-        loss_buffer.append(self.trainer.criterion(pred, y))
+        loss_buffer.append(self.trainer.criterion(pred.double(), y.double()))
         
         metric_buffer['loss'] = loss_buffer
         
