@@ -201,8 +201,8 @@ class Validator():
             d_copy = deepcopy(d)            
 
             if self.scheme == 'old':
-                logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d).to(self.device)
-            
+                logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d)
+                            
             else:
                 logits_buffer = self.batched_prediction(skip, N_segments, d_copy, d, n_duration)
             logits = self.compute_logits(logits_buffer)
@@ -247,7 +247,7 @@ class Validator():
             d['x'] = torch.roll(d_copy['x'], shifts=(offset), dims=-1)
             logits = self.forward_item(d)[0]
             # check against duration to avoid bogus predictions on padded data
-            logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf.to(self.device), logits.to(self.device)).to(self.device)
+            logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf, logits.to(self.device)).to(self.device)
             logits_buffer.append(logits)
         return logits_buffer
 
@@ -294,5 +294,5 @@ def max_thresh(l, thresh=-1):
     Take the max over each window if it exceeds a threshold of thresh
     """
     res = max_all(l)
-    return torch.where(res > thresh, res, -torch.inf.to(DEVICE)).to(DEVICE)
+    return torch.where(res > thresh, res, -torch.inf).to(DEVICE)
 

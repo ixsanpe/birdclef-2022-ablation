@@ -246,18 +246,18 @@ def main():
     metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
     metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
     metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
-    #metric_f1_old = PickyScore(MultilabelF1Score).to(device)
-    #metric_recall_old = PickyScore(MultilabelRecall).to(device)
-    #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
+    metric_f1_old = PickyScore(MultilabelF1Score)
+    metric_recall_old = PickyScore(MultilabelRecall)
+    metric_prec_old = PickyScore(MultilabelPrecision).to(device)
     
     metrics = {
                 'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
                 'RecallOurs': metric_recall_ours,
                 'PrecisionOurs': metric_prec_ours,
-                #'F1_old': metric_f1_old,
-                #'Recall_old': metric_recall_old,
-                #'Precision_old': metric_prec_old, 
+                'F1_old': metric_f1_old,
+                'Recall_old': metric_recall_old,
+                'Precision_old': metric_prec_old, 
             }
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
