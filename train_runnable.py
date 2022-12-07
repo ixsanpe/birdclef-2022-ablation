@@ -8,7 +8,7 @@ from modules.training.train_utils import *
 from modules.training.Trainer import Trainer, Metric
 from modules.training.FocalLoss import FocalLoss 
 from modules.training.WeightedBCELoss import WeightedBCELoss
-# from modules import PickyScore
+from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
 
 
@@ -20,7 +20,7 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchmetrics.classification import MultilabelF1Score
+from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
 import warnings
 
 import torch_audiomentations as tam
@@ -45,15 +45,15 @@ def parse_args():
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
-    parser.add_argument('--batch_size_train', type=int, default=8)
+    parser.add_argument('--batch_size_train', type=int, default=16)
     parser.add_argument('--batch_size_val', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
+    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training') #-1
     parser.add_argument('--loss', type=str, default='BCELoss')
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
-    parser.add_argument('--validate_every', type=int, default=150)
+    parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
 
@@ -70,7 +70,7 @@ def parse_args():
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
-    parser.add_argument('--project_name', type=str, default='Baseline')
+    parser.add_argument('--project_name', type=str, default='AblationTest')
     parser.add_argument('--experiment_name', type=str, default='baseline_'+ datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
     return parser.parse_args()
@@ -146,7 +146,7 @@ def main():
     train_loader = DataLoader(
         train_data, 
         batch_size=bs_train, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration, selector=train_selector), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
@@ -154,7 +154,7 @@ def main():
     val_loader = DataLoader(
         val_data, 
         batch_size=bs_val, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=True), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
@@ -246,12 +246,18 @@ def main():
     metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
     metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
     metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
-
+    #metric_f1_old = PickyScore(MultilabelF1Score)
+    #metric_recall_old = PickyScore(MultilabelRecall)
+    #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
+    
     metrics = {
                 'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
                 'RecallOurs': metric_recall_ours,
-                'PrecisionOurs': metric_prec_ours, 
+                'PrecisionOurs': metric_prec_ours,
+                #'F1_old': metric_f1_old,
+                #'Recall_old': metric_recall_old,
+                #'Precision_old': metric_prec_old,
             }
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
