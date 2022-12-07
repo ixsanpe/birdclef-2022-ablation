@@ -56,8 +56,16 @@ def main():
         2.     False       True        False
         3.     False       False       True
         Here, True indicates that the module is included, and False otherwise
-    
-    Finally, it goes through sweep and tries the specified values
+
+    The sequence will be (assuming run_reference=True):
+        1. default parameters
+        2. Instance norm stuff
+        3. change model to resnet
+        4. change model to eca_nfnet_10
+        5. FocalLoss
+    Finally, it goes through sweep and tries the specified values, except the first, 
+    which is the default value. This value we have already tried!
+
     Example:
         sweep = {learning_rate: [2, 3], model_name: [vgg_net]}
         Run     learning_rate       model_name
@@ -72,7 +80,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=True, **kwargs)
+    ablator(run_reference=False, **kwargs)
 
      
 

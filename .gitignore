@@ -25,3 +25,6 @@ misc_testing/test.ipynb
 misc_testing/test.py
 test.py
 .ipynb_checkpoints
+lsf*
+train_ablation_*
+train_runnable_*

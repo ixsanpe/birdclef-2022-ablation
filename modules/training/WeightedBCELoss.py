@@ -7,11 +7,11 @@ import numpy as np
 
 weights = ComputeLossWeights(beta=0.99).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
-
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class WeightedBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
-        super(Weighted_BCE_Loss, self).__init__()
+        super(WeightedBCELoss, self).__init__()
 
     def forward(self, inputs, targets, smooth=1):
         
@@ -27,6 +27,6 @@ class WeightedBCELoss(nn.Module):
         #first compute binary cross-entropy 
         #print('targets:',targets,targets.size())
         #print(targets)
-        BCE_weight = F.binary_cross_entropy(inputs, targets, reduction='mean',weight=weights1) #TODO: add the weights with beta here
+        BCE_weight = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean',weight=weights1.to(device)) #TODO: add the weights with beta here
                        
-        return BCE_weight
+        return BCE_weight.to(device)

@@ -5,9 +5,12 @@ Train a pipeline
 from modules import * 
 from modules.training.train_utils import *
 
-from modules.training.Trainer import Trainer, Metric 
+from modules.training.Trainer import Trainer, Metric
+from modules.training.FocalLoss import FocalLoss 
+from modules.training.WeightedBCELoss import WeightedBCELoss
 # from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
+
 
 import argparse
 from ablation import s2b, check_args
@@ -100,7 +103,9 @@ def main():
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
-    losses = {'BCELoss': nn.BCELoss(), 'FocalLoss': FocalLoss()}
+
+    losses = {'BCELoss': nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss()}
+
     criterion = losses[args.loss]
 
     # Similarly define optimizers as losses
