@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
     parser.add_argument('--batch_size_train', type=int, default=16)
     parser.add_argument('--batch_size_val', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--N', type=int, default=-1, help='number of samples used for training') #-1
     parser.add_argument('--loss', type=str, default='BCELoss')
@@ -70,7 +70,7 @@ def parse_args():
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
-    parser.add_argument('--project_name', type=str, default='AblationDebug')
+    parser.add_argument('--project_name', type=str, default='AblationTest')
     parser.add_argument('--experiment_name', type=str, default='baseline_'+ datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
     return parser.parse_args()
@@ -146,7 +146,7 @@ def main():
     train_loader = DataLoader(
         train_data, 
         batch_size=bs_train, 
-        num_workers=0, #8
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration, selector=train_selector), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
@@ -154,7 +154,7 @@ def main():
     val_loader = DataLoader(
         val_data, 
         batch_size=bs_val, 
-        num_workers=0, #8
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=True), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
