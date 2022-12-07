@@ -80,17 +80,21 @@ class Validator():
             N_segments:
                 The number of segments to predict on (no more than self.bs_max // bs due to copying)
             n_duration:
-                number of timepoints taken by SelectSplitData
+                number of timepoints taken by SelectSplitData (for effficiency)
             offset:
                 the offset index at which to start
         Returns:
             preds for (batch:s1, batch:s2, ..., batch:sN)
         """
         # Copies of x, offset by i*skip + offset_term at the ith element
-        copies = [
-            torch.roll(d_copy['x'], shifts=(offset+i)*skip, dims=-1)
-            for i in range(N_segments)
-        ]
+        # copies = [
+        #     torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :n_duration]
+        #     # torch.roll(d_copy['x'], shifts=0, dims=-1)[:n_duration]
+        #     for i in range(N_segments)
+        # ]
+        copies = []
+        for i in range(N_segments):
+            copies.append(torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :int(n_duration)])
         
         """
         make a tensor like 
@@ -117,6 +121,7 @@ class Validator():
 
         the batch size here does not exceed self.bs_max
         """
+        
         for k, v in d_copy.items():
             if k == 'x':
                 d_copy['x'] = copies 
@@ -125,6 +130,7 @@ class Validator():
                     d_copy[k] = torch.concat([v]*N_segments, axis=0)
                 elif isinstance(v, list):
                     d_copy[k] = [v]*N_segments
+        
         logits = self.forward_item(d_copy)[0] # preds for (b1s1, b2s1, ..., b1s2, ..., b1sN, ...)
         return logits 
 
@@ -201,8 +207,8 @@ class Validator():
             d_copy = deepcopy(d)            
 
             if self.scheme == 'old':
-                logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d)# .to(self.device)
-            
+                logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d)
+                            
             else:
                 logits_buffer = self.batched_prediction(skip, N_segments, d_copy, d, n_duration)
             logits = self.compute_logits(logits_buffer)
@@ -224,10 +230,10 @@ class Validator():
         logits = self.predict(bs, d_copy, skip, N_segments, n_duration).to(self.device)
 
         # logits has shape (batch:segment1, ..., batch:segmentK)
-        offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, )).to(self.device).double()
-        lens = torch.concat([d['lens']]*N_segments, axis=0).to(self.device).double()
+        offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, )).to(self.device)
+        lens = torch.concat([d['lens']]*N_segments, axis=0).to(self.device)
 
-        logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits.double()).to(self.device)
+        logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits).to(self.device)
         # make a list of length N_segments where each element corresponds to 
         # predicting on the ith shifted version of x. 
         logits_buffer = [logits[i*bs:(i+1)*bs] for i in range(N_segments)]
@@ -247,7 +253,7 @@ class Validator():
             d['x'] = torch.roll(d_copy['x'], shifts=(offset), dims=-1)
             logits = self.forward_item(d)[0].double()
             # check against duration to avoid bogus predictions on padded data
-            logits = torch.where(d['lens'].unsqueeze(axis=-1).double() < offset, -torch.inf, logits.to(self.device)).to(self.device)
+            logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf, logits.to(self.device)).to(self.device)
             logits_buffer.append(logits)
         return logits_buffer
 
@@ -293,5 +299,6 @@ def max_thresh(l, thresh=-1):
     """
     Take the max over each window if it exceeds a threshold of thresh
     """
-    res = max_all(l).double()
+    res = max_all(l)
     return torch.where(res > thresh, res, -torch.inf).to(DEVICE)
+

@@ -10,6 +10,8 @@ from modules.training.train_utils import *
 from modules.training.Trainer import Trainer, Metric
 from modules.training.FocalLoss import FocalLoss 
 from modules.training.WeightedBCELoss import WeightedBCELoss
+from modules.training.WeightedFocalLoss import WeightedFocalLoss
+
 from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
 
@@ -49,17 +51,17 @@ def parse_args():
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
     parser.add_argument('--batch_size_train', type=int, default=16)
     parser.add_argument('--batch_size_val', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
+    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training') #-1
     parser.add_argument('--loss', type=str, default='BCELoss')
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
-    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up validator but seems buggy')
-
+    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
+    
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=1000, help='duration to train on')
     parser.add_argument('--max_duration', type=int, default=1000, help='how much of the data to load')
@@ -106,7 +108,9 @@ def main():
     # containing losses available, and access them with the
     # key args.loss
 
-    losses = {'BCELoss': nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss()}
+
+    losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
+
 
     criterion = losses[args.loss]
 
@@ -149,7 +153,7 @@ def main():
     train_loader = DataLoader(
         train_data, 
         batch_size=bs_train, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration, selector=train_selector), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
@@ -157,7 +161,7 @@ def main():
     val_loader = DataLoader(
         val_data, 
         batch_size=bs_val, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=True), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
@@ -249,8 +253,8 @@ def main():
     metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
     metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
     metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
-    #metric_f1_old = PickyScore(MultilabelF1Score).to(device)
-    #metric_recall_old = PickyScore(MultilabelRecall).to(device)
+    #metric_f1_old = PickyScore(MultilabelF1Score)
+    #metric_recall_old = PickyScore(MultilabelRecall)
     #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
     
     metrics = {
@@ -260,7 +264,7 @@ def main():
                 'PrecisionOurs': metric_prec_ours,
                 #'F1_old': metric_f1_old,
                 #'Recall_old': metric_recall_old,
-                #'Precision_old': metric_prec_old, 
+                #'Precision_old': metric_prec_old,
             }
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
