@@ -11,9 +11,9 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 30, 
-        'N': -1, 
-        'wandb': True, 
+        'epochs': 5, 
+        'N': 50, 
+        'wandb': False, 
         'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
@@ -21,11 +21,12 @@ def main():
         'duration': 500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
-        'validate_every': -1, 
+        'validate_every': 1, 
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
-        'model_name': 'efficientnet_b2'
+        'model_name': 'efficientnet_b2', 
+        'scheme': 'new'
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
@@ -37,7 +38,8 @@ def main():
         # 'loss': ['FocalLoss',], 
         # 'model_name': ['resnet34', 'eca_nfnet_l0'], 
         # 'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
-        'policy': ['max_thresh', 'first_and_final']
+        # 'policy': ['max_thresh', 'first_and_final']
+        'scheme': ['old']
     }
 
     default_bool = False # whether to include each module in modules by default

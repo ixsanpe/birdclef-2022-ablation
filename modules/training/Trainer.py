@@ -62,16 +62,17 @@ class Trainer(nn.Module):
         """
         Perform validation and log it to the epoch_logger
         """
-        # try:
+        
         with torch.no_grad():
+            self.model.eval()
             for d_v in val_loader:
                 y_v_logits, y_v = self.validator(d_v)
                 y_v_pred = torch.sigmoid(y_v_logits)
                 epoch_logger.register_val(i, y_v_pred, y_v) 
 
         epoch_logger.val_report(i)
-        # except Exception as e:
-        #     print('\n\n\n\n\n\n\nFAILED!!!\n\n\n\n\n\n\n\n\n\n')
+        self.model.train()
+
     def step(self, d):
         logits, y = self.forward_item(d)
         y_pred = torch.sigmoid(logits)
