@@ -11,10 +11,10 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 5, 
+        'epochs': 10, 
         'N': -1, 
         'wandb': True, 
-        'project_name': 'AblationDebug',
+        'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
         'max_duration': 500,
@@ -35,11 +35,11 @@ def main():
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
-        # 'loss': ['FocalLoss',], 
-        # 'model_name': ['resnet34', 'eca_nfnet_l0'], 
+        'loss': ['FocalLoss',], 
+        'model_name': ['resnet34', 'eca_nfnet_l0'], 
         # 'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
-        # 'policy': ['max_thresh', 'first_and_final']
-        'scheme': ['old']
+        'policy': ['max_thresh', 'first_and_final']
+        # 'scheme': ['old']
     }
 
     default_bool = False # whether to include each module in modules by default
