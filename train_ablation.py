@@ -12,16 +12,16 @@ spectrograms, including/excluding other modules, etc.
 def main():
     kwargs = {
         'epochs': 5, 
-        'N': 50, 
-        'wandb': False, 
-        'project_name': 'AblationTest',
+        'N': -1, 
+        'wandb': True, 
+        'project_name': 'AblationDebug',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
         'max_duration': 500,
         'duration': 500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
-        'validate_every': 1, 
+        'validate_every': -1, 
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
@@ -80,7 +80,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=False, **kwargs)
+    ablator(run_reference=True, **kwargs)
 
      
 
