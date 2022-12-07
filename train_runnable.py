@@ -9,6 +9,7 @@ from modules.training.Trainer import Trainer, Metric
 from modules.training.FocalLoss import FocalLoss 
 from modules.training.WeightedBCELoss import WeightedBCELoss
 from modules.training.WeightedFocalLoss import WeightedFocalLoss
+
 from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
 
@@ -105,7 +106,9 @@ def main():
     # containing losses available, and access them with the
     # key args.loss
 
+
     losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
+
 
     criterion = losses[args.loss]
 

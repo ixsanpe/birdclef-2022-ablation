@@ -24,9 +24,11 @@ class FocalLoss(nn.Module):
         targets = targets.view(-1)
         
         #first compute binary cross-entropy 
+
         BCE = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean') #TODO: add the weights with beta here
         #BCE_unweight = F.binary_cross_entropy(inputs, targets, reduction='mean')
         BCE_EXP = torch.exp(-BCE.to(device))
         focal_loss = alpha * (1-BCE_EXP.to(device))**gamma * BCE.to(device)
                        
         return focal_loss.to(device)
+
