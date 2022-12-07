@@ -64,12 +64,14 @@ class Trainer(nn.Module):
         """
         # try:
         with torch.no_grad():
+            self.model.eval()
             for d_v in val_loader:
                 y_v_logits, y_v = self.validator(d_v)
                 y_v_pred = torch.sigmoid(y_v_logits)
                 epoch_logger.register_val(i, y_v_pred, y_v) 
 
         epoch_logger.val_report(i)
+        self.model.train()
         # except Exception as e:
         #     print('\n\n\n\n\n\n\nFAILED!!!\n\n\n\n\n\n\n\n\n\n')
 
@@ -84,12 +86,14 @@ class Trainer(nn.Module):
         """
         # try:
         with torch.no_grad():
+            self.model.eval()
             for d_t in train_loader:
                 y_t_logits, y_t = self.validator(d_t)
                 y_t_pred = torch.sigmoid(y_t_logits)
                 epoch_logger.register_train(i, y_t_pred, y_t)
 
         epoch_logger.train_report_metrics(i)
+        self.model.train()
 
     def step(self, d):
         logits, y = self.forward_item(d)
