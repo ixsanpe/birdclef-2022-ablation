@@ -57,6 +57,14 @@ shift_params = {'min_fraction': -0.5,
                 'max_fraction': 0.5,
                 'p': 1.0}
 
+timemask_params = {'min_band_part': 0.0,
+                    'max_band_part': 0.5,
+                    'fade': False,
+                    'p': 1.0}
+frequencymask_params = {'min_frequency_band': 0.03,
+                        'max_frequency_band': 0.25,
+                        'p': 1.0}
+
 backgroundnoise_params = {'sounds_path': noise_path,
                         'min_snr_in_db': 3.0,
                         'max_snr_in_db': 30.0, 
@@ -70,7 +78,9 @@ transformations = {'gain': (am.Gain, gain_params),
                     'timestretch': (am.TimeStretch, timestretch_params),
                     'pitchshift': (am.PitchShift, pitchshift_params),
                     'shift': (am.Shift, shift_params),
-                    'backgroundnoise': (am.AddBackgroundNoise, backgroundnoise_params)}
+                    'backgroundnoise': (am.AddBackgroundNoise, backgroundnoise_params),
+                    'timemask': (am.TimeMask, timemask_params),
+                    'frequencymask': (am.FrequencyMask, frequencymask_params)}
 
 
 
@@ -80,7 +90,7 @@ def make_dir(path):
         os.mkdir(path)
 
 
-def augment_files(transform, target_path, sample_rate=32000):
+def augment_files(transform, target_path, domain='wav', sample_rate=32000):
     mel_spec = ta.transforms.MelSpectrogram(
                 sample_rate=sample_rate,
                 n_fft=1024,
@@ -109,8 +119,11 @@ def augment_files(transform, target_path, sample_rate=32000):
         if not os.path.isfile(target):
             os.makedirs(new_dir, exist_ok=True)
             wav, sr = librosa.load(f, sr=None, offset=0, duration=None)
-            wav = transform(np.array(wav), sample_rate=sample_rate)
+            if domain=='wav':
+                wav = transform(np.array(wav), sample_rate=sample_rate)
             img = wav2img(torch.from_numpy(wav))
+            if domain=='spec':
+                img = transform(np.array(img))
             torch.save(img, target)
             
 
@@ -119,6 +132,11 @@ def augment_files(transform, target_path, sample_rate=32000):
 def main(argv):
     
     key = argv[0]
+    if len(argv) > 1:
+        domain = argv[1]
+    else:
+        domain = 'wav'
+
     print(f"\n##################################\nComputing {key}\n##################################\n")
 
     
@@ -133,7 +151,7 @@ def main(argv):
         except:
             json.dump({key: str(args[key]) for key in args.keys()}, outfile, skipkeys=True)
 
-    augment_files(transormation(**args), save_path)
+    augment_files(transormation(**args), save_path, domain=domain)
 
 
 if __name__ == "__main__":
