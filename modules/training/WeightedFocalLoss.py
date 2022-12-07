@@ -7,6 +7,7 @@ import numpy as np
 
 weights = ComputeLossWeights(beta=0.9).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 ALPHA = 0.8
@@ -78,9 +79,9 @@ class WeightedFocalLoss(nn.Module):
         #first compute binary cross-entropy 
         #print('targets:',targets,targets.size())
         #print(targets)
-        BCE_WEIGHT = F.binary_cross_entropy(inputs, targets, reduction='mean',weight=weights1) #TODO: add the weights with beta here
-        BCE_unweight = F.binary_cross_entropy(inputs, targets, reduction='mean')
-        BCE_EXP = torch.exp(-BCE_unweight)
-        focal_loss = alpha * (1-BCE_EXP)**gamma * BCE_WEIGHT
+        BCE_WEIGHT = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean',weight=weights1.to(device)) #TODO: add the weights with beta here
+        BCE_unweight = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean')
+        BCE_EXP = torch.exp(-BCE_unweight.to(device))
+        focal_loss = alpha * (1-BCE_EXP.to(device))**gamma * BCE_WEIGHT.to(device)
                         
-        return focal_loss
+        return focal_loss.to(device)

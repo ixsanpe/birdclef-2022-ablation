@@ -7,6 +7,7 @@ import numpy as np
 
 ALPHA = 0.8
 GAMMA = 2
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #Primary unweighted version
 class FocalLoss(nn.Module):
@@ -23,9 +24,9 @@ class FocalLoss(nn.Module):
         targets = targets.view(-1)
         
         #first compute binary cross-entropy 
-        BCE = F.binary_cross_entropy(inputs, targets, reduction='mean') #TODO: add the weights with beta here
+        BCE = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean') #TODO: add the weights with beta here
         #BCE_unweight = F.binary_cross_entropy(inputs, targets, reduction='mean')
-        BCE_EXP = torch.exp(-BCE)
-        focal_loss = alpha * (1-BCE_EXP)**gamma * BCE
+        BCE_EXP = torch.exp(-BCE.to(device))
+        focal_loss = alpha * (1-BCE_EXP.to(device))**gamma * BCE.to(device)
                        
-        return focal_loss
+        return focal_loss.to(device)
