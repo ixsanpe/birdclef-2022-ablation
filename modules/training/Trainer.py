@@ -62,7 +62,7 @@ class Trainer(nn.Module):
         """
         Perform validation and log it to the epoch_logger
         """
-        # try:
+        
         with torch.no_grad():
             self.model.eval()
             for d_v in val_loader:
@@ -72,8 +72,6 @@ class Trainer(nn.Module):
 
         epoch_logger.val_report(i)
         self.model.train()
-        # except Exception as e:
-        #     print('\n\n\n\n\n\n\nFAILED!!!\n\n\n\n\n\n\n\n\n\n')
 
     def validate_train(
         self,

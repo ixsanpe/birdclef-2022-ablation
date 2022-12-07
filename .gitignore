@@ -13,6 +13,7 @@ sbatch_logs/*
 sbatch_logs/
 output/*
 wandb/*
+archived_code/
 subscript.sh
 spec-file.txt
 subscript.sh
@@ -22,6 +23,7 @@ scratch.py
 archived_code/
 misc_testing/test.ipynb
 misc_testing/test.py
+test.py
 .ipynb_checkpoints
 *.out
 lsf*
