@@ -80,17 +80,21 @@ class Validator():
             N_segments:
                 The number of segments to predict on (no more than self.bs_max // bs due to copying)
             n_duration:
-                number of timepoints taken by SelectSplitData
+                number of timepoints taken by SelectSplitData (for effficiency)
             offset:
                 the offset index at which to start
         Returns:
             preds for (batch:s1, batch:s2, ..., batch:sN)
         """
         # Copies of x, offset by i*skip + offset_term at the ith element
-        copies = [
-            torch.roll(d_copy['x'], shifts=(offset+i)*skip, dims=-1)
-            for i in range(N_segments)
-        ]
+        # copies = [
+        #     torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :n_duration]
+        #     # torch.roll(d_copy['x'], shifts=0, dims=-1)[:n_duration]
+        #     for i in range(N_segments)
+        # ]
+        copies = []
+        for i in range(N_segments):
+            copies.append(torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :int(n_duration)])
         
         """
         make a tensor like 
@@ -117,6 +121,7 @@ class Validator():
 
         the batch size here does not exceed self.bs_max
         """
+        
         for k, v in d_copy.items():
             if k == 'x':
                 d_copy['x'] = copies 
@@ -125,6 +130,7 @@ class Validator():
                     d_copy[k] = torch.concat([v]*N_segments, axis=0)
                 elif isinstance(v, list):
                     d_copy[k] = [v]*N_segments
+        
         logits = self.forward_item(d_copy)[0] # preds for (b1s1, b2s1, ..., b1s2, ..., b1sN, ...)
         return logits 
 

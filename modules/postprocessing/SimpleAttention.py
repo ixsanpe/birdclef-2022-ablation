@@ -13,5 +13,8 @@ class SimpleAttention(nn.Module):
         self.att = nn.Sequential(nn.Linear(n_in, width), nn.ReLU(), nn.Linear(width, n_out))
     
     def forward(self, x):
+        if x.dim() < 3:
+            x = x.unsqueeze(1)
         weight = torch.softmax(self.att(x), axis=1)
-        return (x * weight).sum(1) 
+        output = (x * weight)
+        return output.sum(1)

@@ -17,6 +17,7 @@ class PretrainedModel(nn.Module):
         pretrained: bool=True, 
         global_pool: str='',
         in_chans=None, 
+        **kwargs,
     ):
         """
         Parameters:
@@ -37,6 +38,7 @@ class PretrainedModel(nn.Module):
             num_classes=0, # this way, the model has no output head
             global_pool=global_pool,
             in_chans=in_chans,
+            **kwargs,
         )
 
         if "efficientnet" in model_name:
@@ -44,18 +46,19 @@ class PretrainedModel(nn.Module):
         else:
             self.backbone_out = self.backbone.feature_info[-1]["num_chs"]
  
-        self.bn0 = nn.InstanceNorm2d(1) # TODO: not sure if we need this?
     
     def get_out_dim(self):
         return self.backbone_out
 
     def forward(self, x: torch.Tensor):
         x = x.swapaxes(-1, -2)
-        x = x.unsqueeze(-3) # add appropriate channel; (bs, channels=1, )
+        x = x.unsqueeze(1) # add appropriate channel; (bs, channels=1, )
 
-        x = self.backbone(x)  # (bs, channels, feats, time)
-        x = x.mean(-2)  # pool freq
-        x = x.swapaxes(-1, -2)  # bs, time, feats
+        x = self.backbone(x)  
+        x = x.mean(-1).mean(-1)  # pool freq
+        # while x.shape[-1] == 1:
+        #     x = x.squeeze(-1)
+        # x = x.swapaxes(-1, -2)  # bs, time, feats
 
         return x
 
@@ -79,5 +82,16 @@ class OutputHead(nn.Module):
         if return_logits: return x 
         else: return self.activation(x)
 
+# class PretrainedTorch(nn.Module):    
+#     def __init__(self) -> None:
+#         super().__init__()
+#         from torchvision.models import resnet50, ResNet50_Weights
+
+#         # Old weights with accuracy 76.130%
+#         model = resnet50(weights=None)
+#         self.model = model 
     
+#     def forward(self, x):
+#         print(x.shape)
+#         return self.model(x)
 
