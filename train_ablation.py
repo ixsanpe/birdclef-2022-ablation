@@ -11,7 +11,7 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 10, 
+        'epochs': 30, 
         'N': -1, 
         'wandb': True, 
         'project_name': 'AblationTest',
@@ -27,6 +27,7 @@ def main():
         'test_split': .05,
         'model_name': 'efficientnet_b2', 
         'scheme': 'new'
+
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
@@ -35,11 +36,12 @@ def main():
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
-        'loss': ['FocalLoss',], 
-        'model_name': ['resnet34', 'eca_nfnet_l0'], 
-        # 'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
-        'policy': ['max_thresh', 'first_and_final']
-        # 'scheme': ['old']
+
+        'loss': ['BCELoss','FocalLoss','WeightedBCELoss','WeightedFocalLoss']#, 
+        #'model_name': ['resnet34'], 'eca_nfnet_l0'], 
+        #'learning_rate': [1e-2],# 1e-4] # Just as an example, we could have done this too
+        #'policy': ['max_thresh']#, 'first_and_final']
+
     }
 
     default_bool = False # whether to include each module in modules by default
