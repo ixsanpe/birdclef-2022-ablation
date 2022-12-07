@@ -5,9 +5,13 @@ Train a pipeline
 from modules import * 
 from modules.training.train_utils import *
 
-from modules.training.Trainer import Trainer, Metric 
-# from modules import PickyScore
+from modules.training.Trainer import Trainer, Metric
+from modules.training.FocalLoss import FocalLoss 
+from modules.training.WeightedBCELoss import WeightedBCELoss
+from modules.training.WeightedFocalLoss import WeightedFocalLoss
+from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
+
 
 import argparse
 from ablation import s2b, check_args
@@ -17,12 +21,12 @@ import pandas as pd
 import json
 from torch.utils.data import DataLoader 
 from torch.optim import Adam 
-from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision 
-import time
+from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, MultilabelPrecision
 import warnings
 
 import torch_audiomentations as tam
 from decouple import config
+from datetime import datetime
 
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
@@ -42,32 +46,34 @@ def parse_args():
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
-    parser.add_argument('--batch_size_train', type=int, default=8)
-    parser.add_argument('--batch_size_val', type=int, default=8)
-    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--batch_size_train', type=int, default=16)
+    parser.add_argument('--batch_size_val', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training')
+    parser.add_argument('--N', type=int, default=-1, help='number of samples used for training') #-1
     parser.add_argument('--loss', type=str, default='BCELoss')
     parser.add_argument('--optimizer', type=str, default='Adam')
     parser.add_argument('--overlap', type=float, default=.3)
-    parser.add_argument('--validate_every', type=int, default=150)
+    parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
-
+    parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
+    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
+    
     # Pipeline configuration
-    parser.add_argument('--duration', type=int, default=30, help='duration to train on')
-    parser.add_argument('--max_duration', type=int, default=30, help='how much of the data to load')
-    parser.add_argument('--sr', type=float, default=10)
-    parser.add_argument('--n_splits', type=int, default=6)
+    parser.add_argument('--duration', type=int, default=500, help='duration to train on')
+    parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
+    parser.add_argument('--sr', type=float, default=1, help='(effective) sample rate')
+    parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--offset_val', type=float, default=0.)
     parser.add_argument('--offset_train', type=int, default=None)
     parser.add_argument('--model_name', type=str, default='efficientnet_b2')
-    parser.add_argument('--InstanceNorm', type=s2b)# , default=default_bool)
+    parser.add_argument('--InstanceNorm', type=s2b)
     parser.add_argument('--SimpleAttention', type=s2b, default='True')
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
-    parser.add_argument('--project_name', type=str, default='Baseline')
-    parser.add_argument('--experiment_name', type=str, default='baseline_'+str(int(time.time())))
+    parser.add_argument('--project_name', type=str, default='AblationTest')
+    parser.add_argument('--experiment_name', type=str, default='baseline_'+ datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
     return parser.parse_args()
 
@@ -98,7 +104,9 @@ def main():
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
-    losses = {'BCELoss': nn.BCELoss()}
+
+    losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
+
     criterion = losses[args.loss]
 
     # Similarly define optimizers as losses
@@ -132,15 +140,15 @@ def main():
         data_class = SpecDataset
     else:
         data_class = SimpleDataset
-    train_data = data_class(df_train, SPEC_PATH, mode='train', labels=birds)
-    val_data = data_class(df_val, SPEC_PATH, mode='train', labels=birds)    
+    train_data = data_class(df_train, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)
+    val_data = data_class(df_val, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)    
 
-    train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') #device=device
+    train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') 
 
     train_loader = DataLoader(
         train_data, 
         batch_size=bs_train, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=False, sr=sr, duration=max_duration, selector=train_selector), # defined in train_utils.py
         shuffle=True, 
         pin_memory=True
@@ -148,7 +156,7 @@ def main():
     val_loader = DataLoader(
         val_data, 
         batch_size=bs_val, 
-        num_workers=8, 
+        num_workers=8, #8
         collate_fn=lambda x: collate_fn(x, load_all=True), # defined in train_utils.py
         shuffle=False, 
         pin_memory=True
@@ -240,17 +248,37 @@ def main():
     metric_f1_ours = F1Macro() # PickyScore(MultilabelF1Score)
     metric_recall_ours = RecallMacro() # PickyScore(MultilabelRecall)
     metric_prec_ours = PrecisionMacro() # PickyScore(MultilabelPrecision)
-
+    #metric_f1_old = PickyScore(MultilabelF1Score)
+    #metric_recall_old = PickyScore(MultilabelRecall)
+    #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
+    
     metrics = {
                 'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
                 'RecallOurs': metric_recall_ours,
-                'PrecisionOurs': metric_prec_ours, 
+                'PrecisionOurs': metric_prec_ours,
+                #'F1_old': metric_f1_old,
+                #'Recall_old': metric_recall_old,
+                #'Precision_old': metric_prec_old,
             }
     
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
-    validator = Validator(data_pipeline_val, model, overlap=overlap, device=device, )
+    policies = {
+        'first_and_final': first_and_final,
+        'max_thresh': max_thresh, 
+        'max_all': max_all    
+    }
+    policy = policies[args.policy]
+
+    validator = Validator(
+        data_pipeline_val, 
+        model, 
+        overlap=overlap, 
+        device=device, 
+        policy=policy,
+        scheme=args.scheme
+    )
 
     metrics = [
         Metric(name, method) for name, method in metrics.items()

@@ -1,5 +1,6 @@
 from ablation import Ablator 
 import time 
+from datetime import datetime 
 """
 This script runs an ablation study.
 To that end, it calls train_runnable.py with different parameters.
@@ -10,32 +11,37 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 10, 
+        'epochs': 30, 
         'N': -1, 
         'wandb': True, 
         'project_name': 'AblationTest',
-        'experiment_name': 'ablation_' + str(int(time.time())), 
+        'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
         'max_duration': 500,
         'duration': 500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
-        'validate_every': 150, 
+        'validate_every': -1, 
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
+        'model_name': 'efficientnet_b2'
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
         # 'InstanceNorm', 
     ]
+
     # TODO: add alternatives below!
-    sweeping = { # first argument is the default, then it makes a run for each alternative
-        'model_name': ['efficientnet_b2', 'resnet34', 'eca_nfnet_l0'], 
-        #'loss': ['BCELoss', 'FocalLoss',]
-        # 'learning_rate': [1e-3, 1e-2, 1e-4] # Just as an example, we could have done this too
+    sweeping = { # Specify the alternatives to the default. These are tried one by one. 
+        'loss': ['BCELoss','FocalLoss','WeightedBCELoss','WeightedFocalLoss']#, 
+        #'model_name': ['resnet34'], 'eca_nfnet_l0'], 
+        #'learning_rate': [1e-2],# 1e-4] # Just as an example, we could have done this too
+        #'policy': ['max_thresh']#, 'first_and_final']
     }
+
     default_bool = False # whether to include each module in modules by default
+
     """
     Ablator runs ablation studies as follows:
     if run_reference: run a reference run with default parameters
@@ -48,11 +54,18 @@ def main():
         2.     False       True        False
         3.     False       False       True
         Here, True indicates that the module is included, and False otherwise
-    
+
+    The sequence will be (assuming run_reference=True):
+        1. default parameters
+        2. Instance norm stuff
+        3. change model to resnet
+        4. change model to eca_nfnet_10
+        5. FocalLoss
     Finally, it goes through sweep and tries the specified values, except the first, 
     which is the default value. This value we have already tried!
+
     Example:
-        sweep = {learning_rate: [1, 2, 3], model_name: [resnet, vgg_net]}
+        sweep = {learning_rate: [2, 3], model_name: [vgg_net]}
         Run     learning_rate       model_name
         1.      2                   resnet (default)
         2.      3                   resnet (default)
