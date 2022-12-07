@@ -56,7 +56,8 @@ def parse_args():
     parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
-
+    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
+    
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=500, help='duration to train on')
     parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
@@ -275,6 +276,7 @@ def main():
         overlap=overlap, 
         device=device, 
         policy=policy,
+        scheme=args.scheme
     )
 
     metrics = [
