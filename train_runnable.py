@@ -59,7 +59,8 @@ def parse_args():
     parser.add_argument('--augs', type=str, default='', help='Name of Augmentation; Possible choices: gain, gaussiannoise, timestrecht, pitchshift, shift, backgroundnoise. Only available for precompute=True')
     parser.add_argument('--aug_prob', type=float, default=1.0)
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
-
+    parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
+    
     # Pipeline configuration
     parser.add_argument('--duration', type=int, default=500, help='duration to train on')
     parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
@@ -289,6 +290,7 @@ def main():
         overlap=overlap, 
         device=device, 
         policy=policy,
+        scheme=args.scheme
     )
 
     metrics = [
