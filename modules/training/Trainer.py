@@ -72,6 +72,28 @@ class Trainer(nn.Module):
 
         epoch_logger.val_report(i)
         self.model.train()
+        # except Exception as e:
+        #     print('\n\n\n\n\n\n\nFAILED!!!\n\n\n\n\n\n\n\n\n\n')
+
+    def validate_train(
+        self,
+        epoch_logger: EpochLogger,
+        train_loader: DataLoader,
+        i: int
+    ):
+        """
+        Perform validation and log it to the epoch_logger
+        """
+        # try:
+        with torch.no_grad():
+            self.model.eval()
+            for d_t in train_loader:
+                y_t_logits, y_t = self.validator(d_t)
+                y_t_pred = torch.sigmoid(y_t_logits)
+                epoch_logger.register_train(i, y_t_pred, y_t)
+
+        epoch_logger.train_report_metrics(i)
+        self.model.train()
 
     def step(self, d):
         logits, y = self.forward_item(d)
@@ -112,13 +134,13 @@ class Trainer(nn.Module):
                 if i % validate_every == validate_every-1 and validate_every > 0: 
                     epoch_logger.train_report()
                     self.validate(epoch_logger, val_loader, i)
+                    self.validate_train(epoch_logger, train_loader, i)
                     self.train_logger.wandb_report() # report to wandb etc 
-                
-
+                    
             if validate_every == -1 or i < validate_every + 1:
-                epoch_logger.train_report()
-                self.validate(epoch_logger, val_loader, validate_every)
-                # wandb below
+              epoch_logger.train_report()
+              self.validate(epoch_logger, val_loader, validate_every)
+              self.validate_train(epoch_logger, train_loader, validate_every)
                 
             if self.model_saver != None:
                 self.model_saver.save_best_model(epoch_logger.validation_loss(), epoch, self.model, self.optimizer, self.criterion)
@@ -132,4 +154,5 @@ class Trainer(nn.Module):
 
 
   
+
 

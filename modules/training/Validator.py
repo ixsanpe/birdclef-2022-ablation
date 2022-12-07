@@ -6,6 +6,8 @@ import warnings
 from math import ceil
 from copy import deepcopy
 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class Validator():
     def __init__(
             self, 
@@ -206,11 +208,10 @@ class Validator():
 
             if self.scheme == 'old':
                 logits_buffer = self.simple_prediction(skip, N_segments, d_copy, d)
-            
+                            
             else:
                 logits_buffer = self.batched_prediction(skip, N_segments, d_copy, d, n_duration)
             logits = self.compute_logits(logits_buffer)
-            
 
             return logits.to(self.device), d['y'].float().to(self.device)
 
@@ -226,13 +227,13 @@ class Validator():
             list whose i-th element is the prediction for the i-th segment
         """
         bs = d['x'].shape[0] # batch size
-        logits = self.predict(bs, d_copy, skip, N_segments, n_duration)
+        logits = self.predict(bs, d_copy, skip, N_segments, n_duration).to(self.device)
 
         # logits has shape (batch:segment1, ..., batch:segmentK)
-        offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, ))
-        lens = torch.concat([d['lens']]*N_segments, axis=0)
+        offsets = torch.tensor([[i*skip]*bs for i in range(N_segments)]).reshape((-1, )).to(self.device)
+        lens = torch.concat([d['lens']]*N_segments, axis=0).to(self.device)
 
-        logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits)
+        logits = torch.where((lens < offsets).unsqueeze(axis=-1), -torch.inf, logits).to(self.device)
         # make a list of length N_segments where each element corresponds to 
         # predicting on the ith shifted version of x. 
         logits_buffer = [logits[i*bs:(i+1)*bs] for i in range(N_segments)]
@@ -252,7 +253,7 @@ class Validator():
             d['x'] = torch.roll(d_copy['x'], shifts=(offset), dims=-1)
             logits = self.forward_item(d)[0]
             # check against duration to avoid bogus predictions on padded data
-            logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf, logits)
+            logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf, logits.to(self.device)).to(self.device)
             logits_buffer.append(logits)
         return logits_buffer
 
@@ -279,25 +280,25 @@ class Validator():
         d = self.data_pipeline(d)
         x, y = d['x'], d['y'].float()
         logits = self.model(x)
-        return logits, y
+        return logits.to(self.device), y.to(self.device)
 
 def first_and_final(l):
     """
     Base predictions on first and final windows of prediction only
     """
     relevant = [l[0], l[-1]]
-    return torch.stack(relevant, axis=-1).mean(axis=-1)
+    return torch.stack(relevant, axis=-1).mean(axis=-1).to(DEVICE)
 
 def max_all(l):
     """
     Take the max of each window as the prediction
     """
-    return torch.stack(l, axis=-1).max(axis=-1).values
+    return torch.stack(l, axis=-1).max(axis=-1).values.to(DEVICE)
 
 def max_thresh(l, thresh=-1):
     """
     Take the max over each window if it exceeds a threshold of thresh
     """
     res = max_all(l)
-    return torch.where(res > thresh, res, -torch.inf)
+    return torch.where(res > thresh, res, -torch.inf).to(DEVICE)
 
