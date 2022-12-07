@@ -157,10 +157,15 @@ class WandbLogger(Logger):
         iteration the object returned is a probability ranking vector
         
         """
-        wandb.log({k: stats[k] for k in self.stat_names})
+        # wandb.log({k: stats[k] for k in self.stat_names})
         for pred, y in zip(stats['pred_ranking'], stats['y_ranking']):
             self.wandb_table.add_data(pred, y)
-        wandb.log({"predictions": self.wandb_table})
+        stats['predictions'] = self.wandb_table
+        stats.pop('y_ranking')
+        stats.pop('pred_ranking')
+
+        # wandb.log({"predictions": self.wandb_table})
+        wandb.log(stats)
 
 class TrainLogger(Logger):
     def __init__(
