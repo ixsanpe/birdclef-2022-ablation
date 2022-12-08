@@ -24,6 +24,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         targets = targets.view(-1)
         
         #first compute binary cross-entropy 
+
         BCE = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean') #TODO: add the weights with beta here
         #BCE_unweight = F.binary_cross_entropy(inputs, targets, reduction='mean')
         BCE_EXP = torch.exp(-BCE.to(device))
