@@ -9,7 +9,7 @@ ALPHA = 0.25
 GAMMA = 2
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#Primary unweighted version
+#Primary version, usable as a backup but probably wrong
 '''class FocalLoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(FocalLoss, self).__init__()
@@ -33,7 +33,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         return focal_loss.to(device)'''
 
 #As implemented here: https://amaarora.github.io/2020/06/29/FocalLoss.html#alpha-and-gamma
-#Reduction = None !!!
 class FocalLoss(nn.Module):
     "Non weighted version of Focal Loss"
     def __init__(self, alpha=ALPHA, gamma=GAMMA):
