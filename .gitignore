@@ -29,5 +29,5 @@ test.py
 lsf*
 train_ablation_*
 train_runnable_*
-
+*.out
 
