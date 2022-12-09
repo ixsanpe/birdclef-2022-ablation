@@ -5,9 +5,10 @@ import torch.nn as nn
 import torchaudio as ta
 import audiomentations as am
 from decouple import config
+import numpy as np
 import librosa
-from modules import *
-from modules.training.train_utils import *
+#from modules import *
+#from modules.training.train_utils import *
 import json
 import sys
 
@@ -112,7 +113,8 @@ def augment_files(transform, target_path, domain='wav', sample_rate=32000):
     )
     all_files = [os.path.join(path, name) for path, subdirs, files in os.walk(audio_path) for name in files]
     for i, f in enumerate(all_files):
-        print(f'Progress: {(i/len(all_files)*100):.1f}')
+        if i%10 == 0:
+            print(f'Progress: {(i/len(all_files)*100):.1f}')
         bird_name, file_name = f.split('/')[-2:]
         new_dir = os.path.join(target_path ,bird_name)
         target = os.path.join(new_dir, file_name.replace('.ogg', '.pt'))
