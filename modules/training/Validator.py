@@ -302,3 +302,18 @@ def max_thresh(l, thresh=-1):
     res = max_all(l)
     return torch.where(res > thresh, res, -torch.inf).to(DEVICE)
 
+def rolling_avg(l):
+    """
+    Weight the windows as .25(past window) + .5 (curr_window) + .25 (next_window). 
+    On the boarders, assign .75 to the boarder windows
+    """
+    if len(l) == 1:
+        return l[0]
+    res = []
+    l = [torch.where( li != torch.inf, li, 0) for li in l]
+    res.append(.75 * l[0] + .25*l[1])
+    for i, _ in enumerate(l[1:-1]):
+        res.append(l[i-1]*.25 + l[i]*.5 + l[i+1]*.25)
+    res.append(.25*l[-2] + .75*l[-1])
+    assert len(res) == len(l)
+    return max_all(res)

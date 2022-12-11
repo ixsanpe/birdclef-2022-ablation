@@ -266,7 +266,8 @@ def main():
     policies = {
         'first_and_final': first_and_final,
         'max_thresh': max_thresh, 
-        'max_all': max_all    
+        'max_all': max_all, 
+        'rolling_avg': rolling_avg,     
     }
     policy = policies[args.policy]
 
