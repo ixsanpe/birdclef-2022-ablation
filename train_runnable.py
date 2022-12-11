@@ -8,6 +8,8 @@ from modules.training.train_utils import *
 from modules.training.Trainer import Trainer, Metric
 from modules.training.FocalLoss import FocalLoss 
 from modules.training.WeightedBCELoss import WeightedBCELoss
+from modules.training.WeightedFocalLoss import WeightedFocalLoss
+
 from modules import PickyScore
 from modules import RecallMacro, PrecisionMacro, F1Macro
 
@@ -31,6 +33,7 @@ DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 SPLIT_PATH = config("SPLIT_PATH")
+AUGMENT_PATH  = config("AUGMENT_PATH")
 
 def parse_args():
     """
@@ -55,6 +58,8 @@ def parse_args():
     parser.add_argument('--overlap', type=float, default=.3)
     parser.add_argument('--validate_every', type=int, default=-1)
     parser.add_argument('--precompute', type=s2b, default='True')
+    parser.add_argument('--augs', type=str, default='', help='Name of Augmentation; Possible choices: gain, gaussiannoise, timestrecht, pitchshift, shift, backgroundnoise. Only available for precompute=True')
+    parser.add_argument('--aug_prob', type=float, default=1.0)
     parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
     parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
     
@@ -94,6 +99,8 @@ def main():
     bs_train = args.batch_size_train
     bs_val = args.batch_size_val
     precompute = args.precompute
+    augs = args.augs
+    aug_prob = args.aug_prob
 
     epochs = args.epochs 
     learning_rate = args.learning_rate
@@ -104,7 +111,9 @@ def main():
     # containing losses available, and access them with the
     # key args.loss
 
-    losses = {'BCELoss': nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss()}
+
+    losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
+
 
     criterion = losses[args.loss]
 
@@ -136,11 +145,20 @@ def main():
 
     # Datasets, DataLoaders
     if precompute:
-        data_class = SpecDataset
+        if augs != '':
+            train_data = AugmentDataset(df_train, SPEC_PATH, AUGMENT_PATH, augmentations = [augs], mode='train', labels=birds, augment_prob=aug_prob)
+            val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds) 
+        else:    
+            train_data = SpecDataset(df_train, SPEC_PATH, mode='train', labels=birds)
+            val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds)  
+
     else:
-        data_class = SimpleDataset
-    train_data = data_class(df_train, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)
-    val_data = data_class(df_val, SPEC_PATH if precompute else DATA_PATH, mode='train', labels=birds)    
+        if augs != '':
+            print('\n Warning: Augmentations cannot be applied if precomputed is not activated \n')
+
+        train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
+        val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
+ 
 
     train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') 
 

@@ -5,9 +5,10 @@ import torch.nn.functional as F
 from modules.training.ComputeLossWeights import ComputeLossWeights
 import numpy as np
 
-weights = ComputeLossWeights(beta=0.99).forward()
+weights = ComputeLossWeights(beta=0.9).forward()
 WEIGHTS = torch.Tensor(np.array(weights))
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class WeightedBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
