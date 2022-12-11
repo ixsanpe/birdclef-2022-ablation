@@ -15,7 +15,7 @@ class Validator():
             model, 
             device: str, 
             overlap: float=.5, 
-            bs_max=32,
+            bs_max=16,
             policy: Callable=lambda l: torch.stack(l, axis=-1).max(axis=-1).values, 
             scheme='new'
         ):
