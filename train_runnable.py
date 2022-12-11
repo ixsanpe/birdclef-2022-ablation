@@ -33,7 +33,6 @@ DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 SPLIT_PATH = config("SPLIT_PATH")
-AUGMENT_PATH  = config("AUGMENT_PATH")
 
 def parse_args():
     """
@@ -146,6 +145,7 @@ def main():
     # Datasets, DataLoaders
     if precompute:
         if augs != '':
+            AUGMENT_PATH  = config("AUGMENT_PATH")
             train_data = AugmentDataset(df_train, SPEC_PATH, AUGMENT_PATH, augmentations = [augs], mode='train', labels=birds, augment_prob=aug_prob)
             val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds) 
         else:    

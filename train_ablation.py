@@ -11,14 +11,14 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 3, 
-        'N': 20, 
-        'wandb': False, 
-        'project_name': 'AblationDebug',
+        'epochs': 10, 
+        'N': -1, 
+        'wandb': True, 
+        'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
-        'max_duration': 500,
-        'duration': 500, 
+        'max_duration': 1500,
+        'duration': 1500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
         'validate_every': -1, 
