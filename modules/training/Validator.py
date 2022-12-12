@@ -15,7 +15,7 @@ class Validator():
             model, 
             device: str, 
             overlap: float=.5, 
-            bs_max=16,
+            bs_max=32,
             policy: Callable=lambda l: torch.stack(l, axis=-1).max(axis=-1).values, 
             scheme='new'
         ):
@@ -155,18 +155,21 @@ class Validator():
         outputs = []
         # for this operation we require divisibility
         if self.bs_max % bs != 0:
-            self.bs_max = self.bs_max - self.bs_max % bs
+            bs_max = self.bs_max - self.bs_max % bs
+            if bs_max == 0: bs_max = bs # Here, bs is smaller than self.bs_max anyways, so this is okay. In fact we will only need one batch to validate
+        else:
+            bs_max = self.bs_max
 
-        N_iterations = ceil(bs*N_segments / self.bs_max)
+        N_iterations = ceil(bs*N_segments / bs_max)
         for i in range(N_iterations):
             outputs.append(self.predict_rolling(
                 d_copy.copy(), 
                 skip, 
                 N_segments=min( # limit output to max_bs. But make sure we don't take too much using the max
-                    [(self.bs_max//bs), max([N_segments - i*(self.bs_max//bs), 0])]
+                    [(bs_max//bs), max([N_segments - i*(bs_max//bs), 0])]
                 ), 
                 n_duration=n_duration, 
-                offset=i*(self.bs_max//bs) # in each step, we make this much progress and skip it next time
+                offset=i*(bs_max//bs) # in each step, we make this much progress and skip it next time
             ))
         # now outputs is a list of lists. outputs[i] = list of length self.bs_max//bs, containing
         # the predictions for the i to i+1-th chunks of size self.bs_max//bs. To recover a list 
@@ -251,7 +254,7 @@ class Validator():
         for i in range(N_segments):
             offset = skip * i # skip i windows
             d['x'] = torch.roll(d_copy['x'], shifts=(offset), dims=-1)
-            logits = self.forward_item(d)[0]
+            logits = self.forward_item(d)[0].double()
             # check against duration to avoid bogus predictions on padded data
             logits = torch.where(d['lens'].unsqueeze(axis=-1) < offset, -torch.inf, logits.to(self.device)).to(self.device)
             logits_buffer.append(logits)

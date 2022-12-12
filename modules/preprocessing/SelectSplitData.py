@@ -40,8 +40,8 @@ class SelectSplitData(nn.Module):
 
     def get_intervals(self, durations):
         # for each sample calculate the maximum allowed offset
-        max_offset = durations - self.duration * self.sr - 1
-        max_offset = torch.where(max_offset > 0, max_offset, 0)
+        max_offset = (durations - self.duration * self.sr - 1).double()
+        max_offset = torch.where(max_offset > 0., max_offset, 0.)
 
         # select an offset (randomly or self.offset)
         if self.offset is None:
