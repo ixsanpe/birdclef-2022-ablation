@@ -11,14 +11,14 @@ spectrograms, including/excluding other modules, etc.
 """
 def main():
     kwargs = {
-        'epochs': 30, 
+        'epochs': 10, 
         'N': -1, 
         'wandb': True, 
         'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
-        'max_duration': 500,
-        'duration': 500, 
+        'max_duration': 1500,
+        'duration': 1500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
         'validate_every': -1, 
@@ -26,8 +26,8 @@ def main():
         'n_splits': 5,
         'test_split': .05,
         'model_name': 'efficientnet_b2', 
-        'scheme': 'new'
-
+        'scheme': 'new', 
+        'k_runs': 1
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)

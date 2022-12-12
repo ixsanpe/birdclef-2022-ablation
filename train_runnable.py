@@ -33,7 +33,6 @@ DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 SPLIT_PATH = config("SPLIT_PATH")
-AUGMENT_PATH  = config("AUGMENT_PATH")
 
 def parse_args():
     """
@@ -271,6 +270,7 @@ def main():
     # Datasets, DataLoaders
     if precompute:
         if augs != '':
+            AUGMENT_PATH  = config("AUGMENT_PATH")
             train_data = AugmentDataset(df_train, SPEC_PATH, AUGMENT_PATH, augmentations = [augs], mode='train', labels=birds, augment_prob=aug_prob)
             val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds) 
         else:    
@@ -409,7 +409,8 @@ def main():
     policies = {
         'first_and_final': first_and_final,
         'max_thresh': max_thresh, 
-        'max_all': max_all    
+        'max_all': max_all, 
+        'rolling_avg': rolling_avg,     
     }
     policy = policies[args.policy]
 
@@ -426,23 +427,24 @@ def main():
         Metric(name, method) for name, method in metrics.items()
     ]
 
-    config = {
-        "epochs": epochs,
-        "batch_size_train": bs_train,
-        "batch_size_val": bs_val,
-        "learning_rate": learning_rate,
-        "device": device,
-        "duration" : duration,
-        "n_splits" : n_splits,
-        "overlap": overlap, 
-        "transforms1_train": transforms1_train,
-        "transforms1_val": transforms1_val,
-        "transforms2": transforms2,
-        "transforms3": transforms3,
-        "model": model,
-        "test_split" : test_split, 
-        "args": args
-    }
+    # config = {
+    #     "epochs": epochs,
+    #     "batch_size_train": bs_train,
+    #     "batch_size_val": bs_val,
+    #     "learning_rate": learning_rate,
+    #     "device": device,
+    #     "duration" : duration,
+    #     "n_splits" : n_splits,
+    #     "overlap": overlap, 
+    #     "transforms1_train": transforms1_train,
+    #     "transforms1_val": transforms1_val,
+    #     "transforms2": transforms2,
+    #     "transforms3": transforms3,
+    #     "model": model,
+    #     "test_split" : test_split, 
+    #     "args": args
+    # }
+    config = vars(args)
 
     trainer = Trainer(
         model=model, 
@@ -461,6 +463,7 @@ def main():
             'project_name': project_name, 
             'experiment_name': experiment_name, 
             'config': config, 
+            'group': None
         }
     )
     

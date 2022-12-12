@@ -189,7 +189,8 @@ class WandbLogger(Logger):
         columns: list=['Predicted', 'Expected'], 
         project_name: str='Baseline', 
         experiment_name: str=None, 
-        config: dict={}
+        config: dict={}, 
+        group=None,
     ):
         """
         Parameters:
@@ -209,7 +210,8 @@ class WandbLogger(Logger):
             experiment_name = "baseline_" + str(int(time.time()))
         self.stat_names = stat_names
         self.wandb_table = wandb.Table(columns=columns)
-        wandb.init(project=project_name, entity="ai4goodbirdclef", name=experiment_name, config=config)
+        if group is None: group = experiment_name
+        wandb.init(project=project_name, entity="ai4goodbirdclef", name=experiment_name, config=config, group=group)
         wandb.watch(trainer.model)
 
     def __call__(self, stats: dict):
@@ -254,7 +256,8 @@ class TrainLogger(Logger):
         columns: list=['Predicted', 'Expected'], 
         project_name: str='Baseline', 
         experiment_name: str=None, 
-        config: dict={}
+        config: dict={}, 
+        group=None, 
     ):
         """
         Parameters:
@@ -280,7 +283,8 @@ class TrainLogger(Logger):
                 columns=columns,
                 project_name=project_name,
                 experiment_name=experiment_name,
-                config=config
+                config=config, 
+                group=group, 
             )
             
     
