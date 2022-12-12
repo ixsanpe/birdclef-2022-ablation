@@ -26,8 +26,5 @@ misc_testing/test.py
 test.py
 .ipynb_checkpoints
 *.out
-lsf*
-train_ablation_*
-train_runnable_*
-*.out
 
+Preprocessing/

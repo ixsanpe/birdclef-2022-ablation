@@ -1,3 +1,5 @@
+
+
 """
 Train a pipeline 
 """
@@ -62,8 +64,8 @@ def parse_args():
     parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
     
     # Pipeline configuration
-    parser.add_argument('--duration', type=int, default=500, help='duration to train on')
-    parser.add_argument('--max_duration', type=int, default=500, help='how much of the data to load')
+    parser.add_argument('--duration', type=int, default=1500, help='duration to train on')
+    parser.add_argument('--max_duration', type=int, default=1500, help='how much of the data to load')
     parser.add_argument('--sr', type=float, default=1, help='(effective) sample rate')
     parser.add_argument('--n_splits', type=int, default=5)
     parser.add_argument('--offset_val', type=float, default=0.)
