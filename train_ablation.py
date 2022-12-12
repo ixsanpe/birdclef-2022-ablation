@@ -27,7 +27,7 @@ def main():
         'test_split': .05,
         'model_name': 'efficientnet_b2', 
         'scheme': 'new', 
-        'k_runs': 1
+        'k_runs': 3
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
