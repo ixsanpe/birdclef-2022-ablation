@@ -33,6 +33,7 @@ DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 OUTPUT_DIR = config("OUTPUT_DIR")
 SPLIT_PATH = config("SPLIT_PATH")
+AUGMENT_PATH = config("AUGMENT_PATH")
 
 def parse_args():
     """
