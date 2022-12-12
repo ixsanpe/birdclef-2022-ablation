@@ -17,8 +17,8 @@ def main():
         'project_name': 'AblationTest',
         'experiment_name': 'ablation_' + datetime.now().strftime("%Y-%m-%d-%H-%M"),
         'sr': 1, 
-        'max_duration': 500,
-        'duration': 500, 
+        'max_duration': 1500,
+        'duration': 1500, 
         'batch_size_train': 16, 
         'batch_size_val': 1, 
         'validate_every': -1, 
@@ -26,8 +26,8 @@ def main():
         'n_splits': 5,
         'test_split': .05,
         'model_name': 'efficientnet_b2', 
-        'scheme': 'new'
-
+        'scheme': 'new', 
+        'k_runs': 1
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
@@ -37,7 +37,7 @@ def main():
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
 
-        'loss': ['BCELoss','FocalLoss','WeightedBCELoss','WeightedFocalLoss']#, 
+        'augs': ['timestretch', 'backgroundnoise', 'frequencymask', 'gain', 'gaussiannoise', 'pitchshift', 'shift', 'timemask']#, 
         #'model_name': ['resnet34'], 'eca_nfnet_l0'], 
         #'learning_rate': [1e-2],# 1e-4] # Just as an example, we could have done this too
         #'policy': ['max_thresh']#, 'first_and_final']
