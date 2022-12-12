@@ -37,7 +37,7 @@ def main():
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
 
-        'loss': ['BCELoss','FocalLoss','WeightedBCELoss','WeightedFocalLoss']#, 
+        'augs': ['timestretch', 'backgroundnoise', 'frequencymask', 'gain', 'gaussiannoise', 'pitchshift', 'shift', 'timemask']#, 
         #'model_name': ['resnet34'], 'eca_nfnet_l0'], 
         #'learning_rate': [1e-2],# 1e-4] # Just as an example, we could have done this too
         #'policy': ['max_thresh']#, 'first_and_final']

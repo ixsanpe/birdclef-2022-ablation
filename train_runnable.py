@@ -26,13 +26,12 @@ from torchmetrics.classification import MultilabelF1Score, MultilabelRecall, Mul
 import warnings
 
 import torch_audiomentations as tam
-from decouple import config
+from decouple import config as cfg
 from datetime import datetime
 
-DATA_PATH = config("DATA_PATH")
-SPEC_PATH = config('SPEC_PATH')
-OUTPUT_DIR = config("OUTPUT_DIR")
-SPLIT_PATH = config("SPLIT_PATH")
+DATA_PATH = cfg("DATA_PATH")
+SPEC_PATH = cfg('SPEC_PATH')
+OUTPUT_DIR = cfg("OUTPUT_DIR")
 
 def parse_args():
     """
@@ -72,6 +71,7 @@ def parse_args():
     parser.add_argument('--model_name', type=str, default='efficientnet_b2')
     parser.add_argument('--InstanceNorm', type=s2b)
     parser.add_argument('--SimpleAttention', type=s2b, default='True')
+    parser.add_argument('--k_runs', type=int, choices=[1, 3], default=1, help='Number of splits for cross validation. Default to 1. Current implementation only support 1 and 3')
 
     # wandb stuff
     parser.add_argument('--wandb', type=s2b, default='True')
@@ -80,11 +80,7 @@ def parse_args():
 
     return parser.parse_args()
 
-
-
-def main():
-    args = parse_args()
-    print(args)
+def train(args, k=1):
     experiment_name = args.experiment_name
     # Take args defined in parse_args(): 
     duration = args.duration 
@@ -109,7 +105,6 @@ def main():
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
-
 
     losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
 
@@ -137,15 +132,21 @@ def main():
 
     num_classes = len(birds)
 
-
-    df_train = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
-    df_val = pd.read_csv(f'{SPLIT_PATH}val_metadata.csv')[:N]
-
+    if args.k_runs == 1:
+        SPLIT_PATH = cfg("SPLIT_PATH")
+        df_train = pd.read_csv(f'{SPLIT_PATH}train_metadata.csv')[:N]
+        df_val = pd.read_csv(f'{SPLIT_PATH}val_metadata.csv')[:N]
+    elif args.k_runs == 3:
+        SPLIT_PATH_KFOLD = cfg("SPLIT_PATH_KFOLD")
+        df_train = pd.read_csv(f'{SPLIT_PATH_KFOLD}{k}/train_metadata.csv')[:N]
+        df_val = pd.read_csv(f'{SPLIT_PATH_KFOLD}{k}/val_metadata.csv')[:N]
+    else:
+        raise NotImplementedError(f'k-fold cross validation only implemented for k =1, 3 but got {k=}')
 
     # Datasets, DataLoaders
     if precompute:
         if augs != '':
-            AUGMENT_PATH  = config("AUGMENT_PATH")
+            AUGMENT_PATH  = cfg("AUGMENT_PATH")
             train_data = AugmentDataset(df_train, SPEC_PATH, AUGMENT_PATH, augmentations = [augs], mode='train', labels=birds, augment_prob=aug_prob)
             val_data = SpecDataset(df_val, SPEC_PATH, mode='train', labels=birds) 
         else:    
@@ -158,7 +159,7 @@ def main():
 
         train_data = SimpleDataset(df_train, DATA_PATH, mode='train', labels=birds)
         val_data = SimpleDataset(df_val, DATA_PATH, mode='train', labels=birds)
- 
+
 
     train_selector = Selector(duration=max_duration, offset=offset_train, device='cpu') 
 
@@ -205,17 +206,17 @@ def main():
             ),
             tam.PolarityInversion(p=0.5)
         ]
-    
+
 
     transforms2 = [ 
         InstanceNorm()
     ]
-    
+
     transforms2 = TransformApplier(
         check_args(transforms2, args)
     )
 
-    
+
     wav2spec = nn.Identity() if precompute else Wav2Spec()
 
     data_pipeline_train = nn.Sequential(
@@ -268,7 +269,7 @@ def main():
     #metric_f1_old = PickyScore(MultilabelF1Score)
     #metric_recall_old = PickyScore(MultilabelRecall)
     #metric_prec_old = PickyScore(MultilabelPrecision).to(device)
-    
+
     metrics = {
                 'F1Micro': metric_f1micro,
                 'F1Ours': metric_f1_ours,
@@ -278,7 +279,7 @@ def main():
                 #'Recall_old': metric_recall_old,
                 #'Precision_old': metric_prec_old,
             }
-    
+
     model_saver = ModelSaver(OUTPUT_DIR, experiment_name)
 
     policies = {
@@ -341,12 +342,22 @@ def main():
             'group': None
         }
     )
-    
+
     trainer.train(
         train_loader, 
         val_loader, 
         epochs=epochs
     )
+
+
+def main():
+    args = parse_args()
+    print(args)
+
+    for k in range(args.k_runs):
+        if args.k_runs > 1:
+            print('#' * 20 + f'\nRunning {k} split\n' + '#' * 20)
+        train(args, k)
 
 
 if __name__ == '__main__':
