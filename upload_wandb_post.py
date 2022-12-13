@@ -9,7 +9,7 @@ class DummyTrainer():
         self.model = nn.Identity()
 
 def main():
-    run = 'first_and_final'
+    run = 'InstanceNorm'
     metrics = [
         'train_F1Ours', 'val_F1Ours', 'train_F1Micro', 
         'val_F1Micro', 'train_loss', 'val_loss', 
@@ -25,11 +25,13 @@ def main():
     with open(f'birdclef-2022/wandb_runs/{run}/config.json') as f:
         config = json.load(f)
     
-    epochs = config['epochs']['value']
+    config = {k: v['value'] for k, v in config.items()}
+    
+    epochs = config['epochs']
 
     name = df.columns[-1].split(' ')[0]
     for k in range(3):
-        logger = WandbLogger(DummyTrainer(), experiment_name=name + f'_{k=}', project_name='AblationDebug', config=config)
+        logger = WandbLogger(DummyTrainer(), experiment_name=name + f'_{k=}', project_name='AblationTest', config=config)
         for epoch in range(epochs):
             stats = {m: df.iloc[epoch + k*epochs, -1] for m, df in dfs.items()}
             logger(stats, log_rankings=False)
