@@ -153,7 +153,6 @@ class F1Macro():
             axis=-1
         )
 
-
         # F1 is nan if and only if prec==rec==0. In this case, we set it to 0. 
         f1 = torch.where(torch.isnan(f1), 0., f1)
         return f1.float().nanmean()

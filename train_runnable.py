@@ -80,7 +80,7 @@ def parse_args():
     return parser.parse_args()
 
 def train(args, k=1):
-    experiment_name = args.experiment_name
+    experiment_name = args.experiment_name + f'_{k=}'
     # Take args defined in parse_args(): 
     duration = args.duration 
     max_duration = args.max_duration
