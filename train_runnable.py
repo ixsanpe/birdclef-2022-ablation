@@ -42,9 +42,6 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Start a training run')
     # Initialize the default boolean parameter
-    # parser.add_argument('--default_bool', type=s2b)
-    # args = parser.parse_known_args() 
-    # default_bool = args[0].default_bool
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')
@@ -83,7 +80,7 @@ def parse_args():
     return parser.parse_args()
 
 def train(args, k=1):
-    experiment_name = args.experiment_name
+    experiment_name = args.experiment_name + f'_{k=}'
     # Take args defined in parse_args(): 
     duration = args.duration 
     max_duration = args.max_duration
