@@ -40,9 +40,6 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Start a training run')
     # Initialize the default boolean parameter
-    # parser.add_argument('--default_bool', type=s2b)
-    # args = parser.parse_known_args() 
-    # default_bool = args[0].default_bool
 
     # Training hyperparameters
     parser.add_argument('--test_split', type=float, default=.05, help='fraction of samples for the validation dataset')

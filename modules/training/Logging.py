@@ -245,6 +245,9 @@ class WandbLogger(Logger):
         stats.pop('pred_ranking_train')
         # wandb.log({"predictions": self.wandb_table})
         wandb.log(stats)
+    
+    def finish_run(self):
+        wandb.finish()
 
 class TrainLogger(Logger):
     def __init__(
@@ -350,4 +353,7 @@ class TrainLogger(Logger):
         if not self.keep_epochs:
             last_epoch = self.epochs[-1]
             del last_epoch # free up some memory
+
+    def finish_run(self):
+        self.wandb_logger.finish_run()
       
