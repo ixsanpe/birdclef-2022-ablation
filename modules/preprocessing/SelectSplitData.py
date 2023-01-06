@@ -11,10 +11,11 @@ class SelectSplitData(nn.Module):
     ):
 
         """
-        Select a chunk of size duration and split it into n_splits
+        Select a chunk of size duration and split it into n_splits. This is 
+        helpful e.g. if we want to apply Mixup, as many BirdClef submissions have. 
         Parameters:
             duration:
-                time in seconds to extract from data
+                time in seconds or timepoints to extract from data
             n_splits:
                 number of splits to make 
             offset:
@@ -39,6 +40,9 @@ class SelectSplitData(nn.Module):
         return x
 
     def get_intervals(self, durations):
+        """
+        Get an interval to load based on the durations of the data, and self.offset
+        """
         # for each sample calculate the maximum allowed offset
         max_offset = (durations - self.duration * self.sr - 1).double()
         max_offset = torch.where(max_offset > 0., max_offset, 0.)
@@ -59,12 +63,12 @@ class SelectSplitData(nn.Module):
         """
         Select for a duration and split the data. If the duration is too short, we pad with 0's
         Parameters:
-            x:
-                array or tensor from which to select and to split
-            durations:
-                the duration for each x so that we don't use many empty spectrograms
+            d:
+                dict such that d['x'] is an array or tensor from which to select and to split, and 
+                d['lens'] conraints the duration for each x so that we don't use many empty spectrograms
+                but only select in a range containing relevant data
         Returns:
-            processed version of x with shape (x.shape[0] * n_splits, ..., x.shape[-1]//n_folds)
+            d with a processed version of d['x'] with shape (x.shape[0] * n_splits, ..., x.shape[-1]//n_folds)
         """
         # ensure input has at last the correct duration
         x = d['x']

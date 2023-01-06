@@ -19,11 +19,17 @@ class Trainer(nn.Module):
         device: str, 
         metrics: list[Metric],
         keep_epochs: bool=False,
-        verbose: bool=True, 
         use_wandb: bool=True,
         validate_every: int=-1,
         wandb_args={}, 
     ):
+        """
+        A trainer that trains a pipeline. 
+        Gets the model (full pipeline) as well as data pipelines for training
+        and validation, as well as other training modules to train this model.
+        See train.py for an example.
+        Furthermore,  
+        """
         super().__init__()
         self.model = model
         self.data_pipeline_train = data_pipeline_train
@@ -34,10 +40,12 @@ class Trainer(nn.Module):
         self.device = device
         self.validate_every = validate_every
         self.validator = validator
-        self.verbose = verbose
         self.train_logger = TrainLogger(self, metrics=metrics, use_wandb=use_wandb, keep_epochs=keep_epochs, **wandb_args)
     
     def to_device(self, d: dict):
+        """
+        Send all tensors in dict d to self.device
+        """
         for k, v in d.items():
             if isinstance(v, torch.Tensor):
                 d[k] = v.to(self.device)
@@ -82,7 +90,6 @@ class Trainer(nn.Module):
         """
         Perform validation and log it to the epoch_logger
         """
-        # try:
         with torch.no_grad():
             self.model.eval()
             for d_t in train_loader:
@@ -110,14 +117,12 @@ class Trainer(nn.Module):
     ):
         """
         Train for some epochs using the train and validation loaders
-             
         """
         self.train_logger.start_training()
         validate_every = self.validate_every
 
         for epoch in range(epochs):
-            # epoch_logger = EpochLogger(epoch=epoch, trainer=self)
-            # self.train_logger.register(epoch_logger)
+
             epoch_logger = self.train_logger.start_epoch(epoch)
             
 

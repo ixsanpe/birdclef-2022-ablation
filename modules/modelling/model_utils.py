@@ -1,5 +1,6 @@
 """
-util functions for training. Currently a bit messy, we are working on refacoring the logging stuff into a separate class. 
+Utility functions which can be used for modelling.
+In our final report, we only use ModelSaver to save the best models
 """
 
 
@@ -8,7 +9,6 @@ from torch import nn
 import torch
 from torch.distributions import Beta
 from torch.nn.parameter import Parameter
-import wandb
 import warnings
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
@@ -84,7 +84,7 @@ class Mixup(nn.Module):
 
 
 def print_probability_ranking(y, n=5):
-    # sanity checks
+    # sanity checks which can be used in weights and biases if desired
     assert n <= len(y)
     if isinstance(y, torch.Tensor) and torch.any(torch.logical_or(y>1, y<0)): 
         warnings.warn(f'WARNING! Got invalid range for y! \n{y.max()=}, \n{y.min()=}')
@@ -96,94 +96,6 @@ def print_probability_ranking(y, n=5):
         output += "#%i   Class: %i   Prob: %.3f\n"%(i, indices[i], sorted[i])
 
     return output
-
-
-def wandb_log_stats(
-    train_loss: list = [], 
-    val_loss: list=[], 
-    val_metrics: list=[]
-):
-    """
-    sends the current training statistic to Weights and Biases
-    Parameters:
-        train_loss:
-            training loss, evaluated by cost function on training set
-        val_loss: 
-            validation loss, evaluated by cost function on validation set
-        val_metric: 
-            validation metric, evaluated by metric function on validation set
-    """
-    """
-    print(val_metrics)
-    val_metrics_new = {}
-    for el in val_metrics:
-        for key, object in el.items():
-            if not val_metrics_new[key]:
-                val_metrics_new[key] = []
-            val_metrics_new[key].append(object)
-    # transform list of dict to dict of list
-    """
-    log_dict = {
-        "train_loss": train_loss,
-        "val_loss": val_loss
-        }
-    log_dict.update(val_metrics)
-    wandb.log(log_dict)
-
-
-def wandb_log_spectrogram(
-    model,
-    data_pipeline_val,
-    val_loader,
-    device, 
-    wandb_spec_table,
-    n_splits
-):
-    """
-    Runs model on validation set and sends the first n batches of spectrogram, label, and prediction to Weights and Biases
-    Parameters:
-        model:
-            model for which to report progress
-        data_pipeline_val: 
-            Pre-processing pipeline of the validation data from audio signal to model input
-            data_pipeline_val should take a tuple (x, y) as an input
-        val_loader: 
-            data loader for validation data
-        device: 
-            device on which to train model
-        wandb_spec_data: 
-            The wandb table to save the data to
-        n_splits:
-            number of splits of 30s recordings
-
-    """
-    with torch.no_grad():
-        # only takes the first n batches
-        n = 1 # maximum amount of batches to evaluate
-
-        for i, d_v in enumerate(val_loader): 
-            d_v = data_pipeline_val(d_v)
-            x_v, y_v = d_v['x'], d_v['y']
-            y_v_logits = model(x_v)
-            y_v_pred = torch.sigmoid(y_v_logits)
-            #print(y_v_pred.shape, x_v.shape, y_v.shape)
-            
-            for j, x_v_slice in enumerate(x_v):
-                y_v_slice, y_v_slice_pred = y_v[int(j/n_splits)], y_v_pred[int(j/n_splits)]
-                wandb_spec_table.add_data(wandb.Image(x_v_slice), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
-            if i+1 >= n:
-                break
-
-            # if we want to leverage predictions, we can do this instead:
-            """
-            for i, y_v_slice in enumerate(y_v):
-                grid_image = make_grid(x_v.unsqueeze(1)[i*n_splits:(i+1)*n_splits], nrow=1)[0,...]
-                y_v_slice = leverage(y_v_pred[i*n_splits:(i+1)*n_splits]) # leverage has to be implemented
-                wandb_spec_table.add_data(wandb.Image(grid_image), print_probability_ranking(y_v_slice), print_probability_ranking(y_v_slice_pred))
-            """
-
-        wandb.log({"predictions": wandb_spec_table})
-
 
 
 class ModelSaver:
@@ -269,42 +181,3 @@ class ModelSaver:
             plt.ylabel('Accuracy')
             plt.legend()
             plt.savefig('%s/%s_metric.png'%(self.save_dir, self.name), bbox_inches='tight')
-
-def print_output(
-        train_loss :float = 0., 
-        current_loss: float = 0.,
-        train_metrics :dict = None, 
-        val_loss :float = 0., 
-        val_metrics :dict=None,
-        i: int=1,
-        max_i: int=1,
-        epoch :int = 0
-    ):
-    print(f'''
-        epoch {epoch+1}, 
-        iteration {i}/{max_i}:\t
-        running loss = {train_loss:.3f}\t
-        current loss = {current_loss:.3f}\t
-        validation loss = {val_loss:.3f} 
-        {print_metrics(train_metrics)}
-        {print_metrics(val_metrics)}
-    ''') 
-
-
-def print_metrics(
-    metrics: dict,
-    prefix: str = ''
-):
-
-    """
-    function to print out the dict of metrices
-    metrics:
-        a dict of metrices with the form {'metric_name': metric_func}
-    """
-    output = ""
-
-    if metrics != None:
-        for me_name, me_score in metrics.items():
-            output = output + f"\t {prefix}{me_name} = {me_score:.3f}"
-
-    return output

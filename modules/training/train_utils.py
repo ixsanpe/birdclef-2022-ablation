@@ -107,7 +107,7 @@ def collate_fn(
 
     Parameters:
         data:
-            tuple such that data[0] is the audio signal to be processed and data[1] is the corresponding label
+            tuple such that data[0] is the audio signal to be processed, data[1] is the corresponding label and d[2] is the path to the file
         load_all:
             whether to load the full file. Useful for memory issues
         sr:
@@ -118,8 +118,7 @@ def collate_fn(
             A selector can be passed to select only some of the data (at random if desired)
     
     Returns:
-        a dict of the padded input 'x', the label 'y' and the lengths 'lens' of the original input
-        Every item in the dict is a torch.Tensor
+        a dict of the padded input 'x', the label 'y', the lengths 'lens' of the original input and the filenames 'files'
     """
     paths = [d[2] for d in data]
     files = [f[12:-4] for f in paths] #folder/nameOfFile (without .ogg)

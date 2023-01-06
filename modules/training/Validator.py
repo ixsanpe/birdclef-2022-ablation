@@ -86,12 +86,7 @@ class Validator():
         Returns:
             preds for (batch:s1, batch:s2, ..., batch:sN)
         """
-        # Copies of x, offset by i*skip + offset_term at the ith element
-        # copies = [
-        #     torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :n_duration]
-        #     # torch.roll(d_copy['x'], shifts=0, dims=-1)[:n_duration]
-        #     for i in range(N_segments)
-        # ]
+
         copies = []
         for i in range(N_segments):
             copies.append(torch.roll(d_copy['x'], shifts=((offset+i)*skip), dims=-1)[..., :int(n_duration)])
@@ -294,7 +289,7 @@ def first_and_final(l):
 
 def max_all(l):
     """
-    Take the max of each window as the prediction
+    Over all the windows, for each bird, take the maximum predicted probability of prescence
     """
     return torch.stack(l, axis=-1).max(axis=-1).values.to(DEVICE)
 

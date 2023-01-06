@@ -1,4 +1,7 @@
+"""
+Precompute augmentations
 
+"""
 import os
 import torch
 import torch.nn as nn
@@ -31,7 +34,7 @@ Options for AUGMENTATION
     - shift
     - backgroundnoise
 
-To add more options, add them into transformations dict in line 68
+To add more options, add them into transformations dict above "def make_dir"
 
 
 '''
