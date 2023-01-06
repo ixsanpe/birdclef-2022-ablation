@@ -149,7 +149,7 @@ class Trainer(nn.Module):
 
         # At the end of training: Save model and training curve
         self.model_saver.save_final_model(epochs, self.model, self.optimizer, self.criterion)
-
+        self.train_logger.finish_run()
 
   
 

@@ -214,7 +214,7 @@ class WandbLogger(Logger):
         wandb.init(project=project_name, entity="ai4goodbirdclef", name=experiment_name, config=config, group=group)
         wandb.watch(trainer.model)
 
-    def __call__(self, stats: dict):
+    def __call__(self, stats: dict, log_rankings=True):
         """
         stats is a dict with keys 'train_loss', 'val_loss', 'pred_ranking' and 'y_ranking'
         where train_loss, val_loss are floats and pred_ranking, y_ranking are iterable such that in each
@@ -233,18 +233,25 @@ class WandbLogger(Logger):
         wandb.log(stats)
         '''
         # wandb.log({k: stats[k] for k in self.stat_names})
-        for pred, y in zip(stats['pred_ranking_val'], stats['y_ranking_val']):
-            self.wandb_table.add_data(pred, y)
-        stats['predictions_val'] = self.wandb_table
-        for pred, y in zip(stats['pred_ranking_train'], stats['y_ranking_train']):
-            self.wandb_table.add_data(pred, y)
-        stats['predictions_train'] = self.wandb_table
-        stats.pop('y_ranking_val')
-        stats.pop('y_ranking_train')
-        stats.pop('pred_ranking_val')
-        stats.pop('pred_ranking_train')
+        if log_rankings:
+            for pred, y in zip(stats['pred_ranking_val'], stats['y_ranking_val']):
+                self.wandb_table.add_data(pred, y)
+            stats['predictions_val'] = self.wandb_table
+            for pred, y in zip(stats['pred_ranking_train'], stats['y_ranking_train']):
+                self.wandb_table.add_data(pred, y)
+            stats['predictions_train'] = self.wandb_table
+        try:
+            stats.pop('y_ranking_val')
+            stats.pop('y_ranking_train')
+            stats.pop('pred_ranking_val')
+            stats.pop('pred_ranking_train')
+        except:
+            pass 
         # wandb.log({"predictions": self.wandb_table})
         wandb.log(stats)
+    
+    def finish_run(self):
+        wandb.finish()
 
 class TrainLogger(Logger):
     def __init__(
@@ -350,4 +357,7 @@ class TrainLogger(Logger):
         if not self.keep_epochs:
             last_epoch = self.epochs[-1]
             del last_epoch # free up some memory
+
+    def finish_run(self):
+        self.wandb_logger.finish_run()
       

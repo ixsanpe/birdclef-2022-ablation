@@ -88,6 +88,9 @@ def k_split_data(save_path, k=3):
 
         metadata_train.to_csv(os.path.join(save_path_k, 'train_metadata.csv'))
         metadata_test.to_csv(os.path.join(save_path_k, 'val_metadata.csv'))
-##save_path = "/cluster/work/igp_psr/ai4good/group-2b/Lars_code/birdclef-2022/splits/3_fold_split"
-##k_split_data(save_path, k=3)
-# %%
+
+if __name__ == '__main__':
+    # save_path = "splits/3_fold_split"
+    # k_split_data(save_path, k=3)
+    pass
+
