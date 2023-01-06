@@ -7,14 +7,16 @@ import audiomentations as am
 from decouple import config
 import numpy as np
 import librosa
-#from modules import *
-#from modules.training.train_utils import *
 import json
 import sys
 
+
+# Path where data is located. The path should contain a folder called "train_audio" and a folder called "aug"
 DATA_PATH = config("DATA_PATH")
 audio_path = os.path.join(DATA_PATH, "train_audio")
 target_path = os.path.join(DATA_PATH, "aug")
+
+# Directory for freefield background noise data. For the background noise augmentation, this is needed
 noise_path = '/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav'
 
 '''
@@ -30,6 +32,8 @@ Options for AUGMENTATION
     - pitchshift
     - shift
     - backgroundnoise
+    - timemask
+    - frequencymask
 
 To add more options, add them into transformations dict in line 68
 
