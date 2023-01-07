@@ -20,10 +20,10 @@ audio_path = os.path.join(DATA_PATH, "train_audio")
 target_path = os.path.join(DATA_PATH, "aug")
 
 # Directory for freefield background noise data. For the background noise augmentation, this is needed
-noise_path = '/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav'
+noise_path = config('NOISE_PATH')
 
 '''
-Predcompute augmentation file
+Precompute augmentation file
 
 Run in your console 
     python compute_augmentations.py AUGMENTATION
@@ -31,7 +31,7 @@ Run in your console
 Options for AUGMENTATION
     - gain
     - gaussiannoise
-    - timestrecht
+    - timestretch
     - pitchshift
     - shift
     - backgroundnoise

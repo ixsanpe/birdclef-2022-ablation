@@ -7,16 +7,25 @@ AI4Good project
 - You will need $ pip install python-decouple (or requirements.txt, which does so automatically)
 1. $ touch .env 
 2. $ nano .env 
-3. add the variables DATA_PATH, OUTPUT_DIR and SPEC_PATH in Euler they are:
+3. add the variables DATA_PATH, OUTPUT_DIR and SPEC_PATH on Euler they are:
 * DATA_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/
 * OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
-* OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
-* SPEC_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/data/spec
+* SPEC_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/spec/
+* SPLIT_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/splits/split_1/
+* AUGMENT_PATH = /cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/aug/
+* SPLIT_PATH_KFOLD=/cluster/work/igp_psr/ai4good/group-2b/Lars_code/birdclef-2022/splits/3_fold_split/
+* NOISE_PATH=/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav
 
-Furthermore, in order to precompute the data, use the sript `modules/preprocessing/compute_augmentations.py` and follow the instructions there.
+Of course, you can also download the data and set the paths above as you wish. 
+In that case, make sure that ``DATA_PATH`` contains what you download from [the BirdClef 2022 Challenge](https://www.kaggle.com/competitions/birdclef-2022/data), and ``NOISE_PATH`` contains the freefield noise data TODO
 
 #### Running the Code
-The main scripts are `train.py`, `train_ablation_new.py`, and `train_ablation_original.py`.
+To run the full pipeline, set up the .env file as described above and run `main.py`. This will however be *very slow*, and we recommend not recomputing the data, as we shall describe in the following.
+
+The main scripts are `prepare_data.py`, `train.py`, `train_ablation_new.py`, and `train_ablation_original.py`.
+`prepare_data.py` prepares all of the data and will take a lot of time to do so, because computing the audio augmentations is very costly. 
+Instead, we recommend setting the paths as listed above and running the scripts containing "ablation", as these are the ones that generate the output relevant for the report.
+
 `train.py` is a regular train script which can be used to train a regular model, or run a cross validation study with three splits.
 It takes a number of arguments, a description of which can be found in `train.py`, and allows creating many different models using different pre- and post-processing steps, augmentations and (pretrained) model architectures.
 On the other hand, the `train_ablation` scripts call `train.py` with different parameters, instantiating different pipelines in doing so.

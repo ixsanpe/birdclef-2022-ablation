@@ -25,7 +25,6 @@ class AblationRun():
     def __call__(self, **kwargs):
         # assign values to args
         args = kwargs
-        # args['default_bool'] = self.default_bool
         for module in self.modules: 
             if module in self.exceptions:
                 args[module] = not self.default_bool
@@ -80,7 +79,6 @@ class Ablator():
             run(**alternative_kwargs)
         # include/exclude each module
         for module in self.modules:
-            # print(f'\n\nChanging {module=}\n\n')
             run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[module])
             alternative_kwargs = kwargs.copy()
             alternative_kwargs['experiment_name'] = f'{module}_{not self.default_bool}_{kwargs["experiment_name"]}'
@@ -88,7 +86,6 @@ class Ablator():
         # Change other alternatives like model_name/learning rate
         for sweep, alternatives in self.sweeping.items():
             for alternative in alternatives: 
-                # print(f'\n\nChanging {sweep=}\n\n')
                 run = AblationRun(self.script_name, self.default_bool, modules=self.modules, exceptions=[])
                 alternative_kwargs = kwargs.copy()
                 alternative_kwargs[sweep] = alternative

@@ -9,8 +9,6 @@ import torch.nn as nn
 import torchaudio as ta
 from decouple import config
 import librosa
-from modules import *
-from modules.training.train_utils import *
 
 SPEC_PATH = config("SPEC_PATH")
 DATA_PATH = config("DATA_PATH")

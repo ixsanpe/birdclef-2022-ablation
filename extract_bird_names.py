@@ -14,7 +14,7 @@ def remove_chars(s, chars=['[', ']', ' ', '\'']):
         s = s.replace(c, '')
     return s
 
-def main():
+def extract_bird_names():
     DATA_PATH = config("DATA_PATH")
     OUTPUT_PATH = DATA_PATH
     df = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
@@ -36,4 +36,4 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
+    extract_bird_names()
