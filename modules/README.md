@@ -22,6 +22,7 @@ Looking at other submissions, they typically use a *Dataloading* and *Model* mod
     - Apply post-processing to predictions
 
 ## The different subdirectories
+We have split this directory, modules, into multiple subdirectories according to the type of files they contain:
 - data: Modules and scripts relevant for preparing and loading data
 - modelling: module for the pretrained model and utilities
 - postprocessing: modules that modify the output of the pretrained model, so that they can be used for prediction

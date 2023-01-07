@@ -1,5 +1,4 @@
 from ablation import Ablator 
-import time 
 from datetime import datetime 
 """
 This script runs an ablation study, using the old baseline.
@@ -58,7 +57,8 @@ def main():
         'learning_rate': [1e-2,  1e-4], 
         'policy': ['first_and_final', 'rolling_avg'], 
         'duration': [500, 1000], 
-        'loss': ['FocalLoss', 'WeightedBCELoss', 'WeightedFocalLoss']
+        'loss': ['BCELoss','FocalLoss','WeightedBCELoss_beta_0.85','WeightedBCELoss_beta_0.875','WeightedBCELoss_beta_0.9','WeightedBCELoss_beta_0.925','WeightedBCELoss_beta_0.95',
+     'WeightedFocalLoss_beta_0.85','WeightedFocalLoss_beta_0.875','WeightedFocalLoss_beta_0.9','WeightedFocalLoss_beta_0.925','WeightedFocalLoss_beta_0.95']
     }
 
     default_bool = False # whether to include each module in modules by default
