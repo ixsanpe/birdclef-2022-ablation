@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument('--precompute', type=s2b, default='True')
     parser.add_argument('--augs', type=str, default='', help='Name of Augmentation; Possible choices: gain, gaussiannoise, timestrecht, pitchshift, shift, backgroundnoise. Only available for precompute=True')
     parser.add_argument('--aug_prob', type=float, default=1.0)
-    parser.add_argument('--policy', type=str, default='max_all', help='strategy to aggregate preds for validation')
+    parser.add_argument('--policy', type=str, default='rolling_avg', help='strategy to aggregate preds for validation')
     parser.add_argument('--scheme', type=str, default='old', help='new scheme attempted to speed up   validator but seems buggy')
     
     # Pipeline configuration

@@ -25,26 +25,28 @@ def main():
         'precompute': 'True', 
         'n_splits': 5,
         'test_split': .05,
-        'model_name': 'efficientnet_b2', 
+        'model_name': 'resnet34', 
         'scheme': 'new', 
-        'k_runs': 3
+        'k_runs': 3,
+        'policy': 'rolling_avg',
+        'augs': 'shift'
     }
 
     modules = [ # modules to include or exclude (changed one at a time from the default boolean)
-        'InstanceNorm', 
+       # 'InstanceNorm', 
     ]
 
     # TODO: add alternatives below!
     sweeping = { # Specify the alternatives to the default. These are tried one by one. 
 
-        # 'augs': ['timestretch', 'backgroundnoise', 'frequencymask', 'gain', 'gaussiannoise', 'pitchshift', 'shift', 'timemask']#, 
-        #'model_name': ['resnet34'], 'eca_nfnet_l0'], 
-        #'learning_rate': [1e-2],# 1e-4] # Just as an example, we could have done this too
-        'policy': ['first_and_final', 'rolling_avg'], 
-        'duration': [500, 1000]
+        #'augs': ['backgroundnoise'] #shift, gausiannoise
+        'model_name': ['efficientnet_b2', 'eca_nfnet_l0'], 
+        #'learning_rate': [1e-2, 1e-4] # Just as an example, we could have done this too
+        #'policy': ['first_and_final', 'rolling_avg'], 
+        #'duration': [500, 1000]
     }
 
-    default_bool = False # whether to include each module in modules by default
+    default_bool = True # whether to include each module in modules by default
 
     """
     Ablator runs ablation studies as follows:
@@ -82,7 +84,7 @@ def main():
         modules=modules, 
         sweeping=sweeping
     )
-    ablator(run_reference=True, **kwargs)
+    ablator(run_reference=False, **kwargs)
 
      
 
