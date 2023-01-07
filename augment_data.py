@@ -10,7 +10,6 @@ from decouple import config
 import librosa
 from modules import *
 from modules.training.train_utils import *
-import audiomentations as am #TODO: run on cpu
 
 
 def augment_data(transformations):
@@ -66,14 +65,3 @@ def augment_data(transformations):
             os.rmdir(folder[0])
 
     return 0
-
-#This is just to test whether it works
-'''augment = [
-        am.Gain(
-        min_gain_in_db=-15.0,
-        max_gain_in_db=5.0,
-        p=0.5),
-        tam.PolarityInversion(p=0.5)
-    ]
-
-t=augment_data(augment)'''
