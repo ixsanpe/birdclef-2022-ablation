@@ -7,7 +7,7 @@ AI4Good project
 - You will need $ pip install python-decouple (or requirements.txt, which does so automatically)
 1. $ touch .env 
 2. $ nano .env 
-3. add the variables DATA_PATH, OUTPUT_DIR and SPEC_PATH on Euler they are:
+3. add the variables below:
 * DATA_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/
 * OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
 * SPEC_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/spec/

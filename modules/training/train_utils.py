@@ -120,8 +120,8 @@ def collate_fn(
     Returns:
         a dict of the padded input 'x', the label 'y', the lengths 'lens' of the original input and the filenames 'files'
     """
-    paths = [d[2] for d in data]
-    files = [f[12:-4] for f in paths] #folder/nameOfFile (without .ogg)
+    # paths = [d[2] for d in data]
+    # files = [f[12:-4] for f in paths] #folder/nameOfFile (without .ogg)
     if load_all:
         max_dim = max([d[0].shape[-1] for d in data])
     else:
@@ -138,4 +138,4 @@ def collate_fn(
 
     y = torch.stack([torch.tensor(d[1]) for d in data])
     lens = [s.shape[-1] for s in selected]
-    return {'x': x, 'y': y, 'lens': torch.tensor(lens), 'files': files}
+    return {'x': x, 'y': y, 'lens': torch.tensor(lens)} #, 'files': files}

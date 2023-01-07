@@ -7,8 +7,7 @@ Looking at other submissions, they typically use a *Dataloading* and *Model* mod
     - Only loads data in wav format or as a precomputed spectrogram
 
 - Pre-processing 1
-    - Add metadata to each file (e.g. weight based on rating)
-    - Pre-processing of the wav files themselves
+    - Pre-processing of the wav files themselves (if appropriate)
 
 - Transform to Mel Spectrogram if appropriate
     - Make a separate module for transforming to spectrograms, which most submissions in BirdClef train on
@@ -21,3 +20,10 @@ Looking at other submissions, they typically use a *Dataloading* and *Model* mod
 
 - Post-processing
     - Apply post-processing to predictions
+
+## The different subdirectories
+- data: Modules and scripts relevant for preparing and loading data
+- modelling: module for the pretrained model and utilities
+- postprocessing: modules that modify the output of the pretrained model, so that they can be used for prediction
+- preprocessing: augmentations and modules which are used to select and process parts of the data during training
+- training: losses, Trainer, Validator, logging and metrics. Trainer and Validator are classes used to train the model and compute predictions on which to validate. Logging contains modules used by the Trainer to track progress.
