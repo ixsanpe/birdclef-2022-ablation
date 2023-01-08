@@ -6,7 +6,7 @@
 - Create a conda environment with all dependencies:
 $ conda create -n ai4good python=3.10
 $ conda activate ai4good
-$ conda install pytorch torchvision cudatoolkit=11.3 -c pytorch -c nvidia -y
+$ conda install pytorch torchvision cudatoolkit=11.3 -c pytorch -c nvidia -y 
 $ python -m pip install -r requirements.txt
 
 - The path to the data and the repository is read from environment variables which you have to create: 
