@@ -31,7 +31,7 @@ class EpochLogger(Logger):
             epoch:
                 the epoch index to keep track of
             trainer:
-                the Trainer being trained this epoch. EpochLogger uses many of trainer's attributes (e.g. trainer.verbose)
+                the Trainer being trained this epoch. EpochLogger uses many of trainer's attributes 
         
         """
         super().__init__()
@@ -44,8 +44,7 @@ class EpochLogger(Logger):
         self.train_buffer = {}
         self.val_reports = {}
         self.train_reports = {}
-        if trainer.verbose:
-            print(f'starting epoch {epoch}')
+        print(f'starting epoch {epoch}')
 
     def train_report(self):
         print(f'iteration {self.i}\t runnning loss {self.running_train_loss / self.i :.3f}\n')
@@ -100,9 +99,8 @@ class EpochLogger(Logger):
         
         self.val_reports[i] = metric_buffer # save the buffer for later use
 
-        if self.trainer.verbose:
-            print(f'validation report for iteration {i}')
-            print(*[f'{k}\t {v: .3f}' for k, v in metric_buffer.items()], sep='\n') 
+        print(f'validation report for iteration {i}')
+        print(*[f'{k}\t {v: .3f}' for k, v in metric_buffer.items()], sep='\n') 
 
     def register_val(self, i, pred, y):
         """
@@ -184,8 +182,7 @@ class EpochLogger(Logger):
         do some final computations/reporting at the end of the epoch
         """
         assert self.i == len(loader)
-        if self.trainer.verbose:
-            print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss/self.i :.3f}\n')
+        print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss/self.i :.3f}\n')
 
 class WandbLogger(Logger):
     def __init__(
@@ -314,8 +311,7 @@ class TrainLogger(Logger):
         return self.epochs 
 
     def start_training(self):
-        if self.trainer.verbose:
-            print(f'{20*"#"}\nStarting Training on {self.trainer.device} \n{20*"#"}')
+        print(f'{20*"#"}\nStarting Training on {self.trainer.device} \n{20*"#"}')
 
     def start_epoch(self, epoch):
         epoch_logger = EpochLogger(epoch, self.trainer, self.metrics)

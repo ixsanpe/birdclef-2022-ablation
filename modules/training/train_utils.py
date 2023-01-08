@@ -37,7 +37,7 @@ class ModelSaver:
                 'model_state_dict': model.state_dict(),
                 'optimizer' : optimizer,
                 'loss': criterion,
-                }, '%s/%s_best_model.pth'%(self.save_dir, self.name))
+                }, '%s%s_best_model.pth'%(self.save_dir, self.name))
 
 
     def save_final_model(self, epochs, model, optimizer, criterion):

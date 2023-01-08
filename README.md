@@ -29,7 +29,10 @@ The directory where the splits for CV are done
 The directory where the data from freefield is stored
 * NOISE_PATH=/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav
 
-Of course, you can also download the data and set the paths above as you wish. 
+Make sure you have the rights to these directories since otherwise, writing to them is not possible.
+
+Of course, you can also download the data and set the paths above as you wish.
+If you make your own directories, make sure they exist since the code will stop e.g. if it cannot save a model. 
 In that case, make sure that ``DATA_PATH`` contains what you download from [the BirdClef 2022 Challenge](https://www.kaggle.com/competitions/birdclef-2022/data), and ``NOISE_PATH`` contains the [freefield noise data](https://archive.org/details/freefield1010)
 
 ### Running the Code

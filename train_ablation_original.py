@@ -41,7 +41,6 @@ def main():
         'validate_every': -1, 
         'precompute': 'True', 
         'n_splits': 5,
-        'test_split': .05,
         'model_name': 'efficientnet_b2', 
         'scheme': 'new', 
         'k_runs': 3
