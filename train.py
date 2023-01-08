@@ -106,8 +106,23 @@ def train(args, k=1):
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
-    losses = {'BCELoss':nn.BCELoss(),'FocalLoss':FocalLoss(), 'WeightedBCELoss':WeightedBCELoss(),'WeightedFocalLoss':WeightedFocalLoss()}
-
+    losses = losses = {
+        'BCELoss':nn.BCELoss(),
+        'FocalLoss':FocalLoss(),
+        'WeightedBCELoss_beta_0.85':WeightedBCELoss(beta=0.85),
+        'WeightedBCELoss_beta_0.875':WeightedBCELoss(beta=0.875),
+        'WeightedBCELoss_beta_0.9':WeightedBCELoss(beta=0.9), 
+        'WeightedBCELoss_beta_0.925':WeightedBCELoss(beta=0.925), 
+        'WeightedBCELoss_beta_0.95':WeightedBCELoss(beta=0.95),
+        'WeightedBCELoss':WeightedBCELoss(),
+        'WeightedFocalLoss_beta_0.85':WeightedFocalLoss(beta=0.85),
+        'WeightedFocalLoss_beta_0.875':WeightedFocalLoss(beta=0.875),
+        'WeightedFocalLoss_beta_0.9':WeightedFocalLoss(beta=0.9), 
+        'WeightedFocalLoss_beta_0.925':WeightedFocalLoss(beta=0.925),
+        'WeightedFocalLoss_beta_0.95':WeightedFocalLoss(beta=0.95),
+        'WeightedFocalLoss':WeightedFocalLoss(),
+        'WeightedBCELoss_beta_0.999':WeightedBCELoss(beta=0.999)
+    }
 
     criterion = losses[args.loss]
 
