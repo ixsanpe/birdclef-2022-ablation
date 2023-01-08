@@ -106,7 +106,7 @@ def train(args, k=1):
     # Here, to use the args, define a dict
     # containing losses available, and access them with the
     # key args.loss
-    losses = losses = {
+    losses = {
         'BCELoss':nn.BCELoss(),
         'FocalLoss':FocalLoss(),
         'WeightedBCELoss_beta_0.85':WeightedBCELoss(beta=0.85),
