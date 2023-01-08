@@ -1,15 +1,11 @@
-import numpy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-#from modules.training.ComputeLossWeights import ComputeLossWeights
-import numpy as np
 
 ALPHA = 0.25
 GAMMA = 2
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#Primary version, usable as a backup but probably wrong
 '''class FocalLoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(FocalLoss, self).__init__()
@@ -34,14 +30,14 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #As implemented here: https://amaarora.github.io/2020/06/29/FocalLoss.html#alpha-and-gamma
 class FocalLoss(nn.Module):
-    "Non weighted version of Focal Loss"
+    """Non weighted version of Focal Loss"""
     def __init__(self, alpha=ALPHA, gamma=GAMMA):
         super(FocalLoss, self).__init__()
         self.alpha = torch.tensor([alpha, 1-alpha]).to(device)
         self.gamma = gamma
 
     def forward(self, inputs, targets):
-    #flatten label and prediction tensors
+        # flatten label and prediction tensors
         inputs = inputs.view(-1)
         targets = targets.view(-1)
         

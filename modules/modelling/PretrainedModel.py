@@ -56,9 +56,6 @@ class PretrainedModel(nn.Module):
 
         x = self.backbone(x)  
         x = x.mean(-1).mean(-1)  # pool freq
-        # while x.shape[-1] == 1:
-        #     x = x.squeeze(-1)
-        # x = x.swapaxes(-1, -2)  # bs, time, feats
 
         return x
 
@@ -82,16 +79,4 @@ class OutputHead(nn.Module):
         if return_logits: return x 
         else: return self.activation(x)
 
-# class PretrainedTorch(nn.Module):    
-#     def __init__(self) -> None:
-#         super().__init__()
-#         from torchvision.models import resnet50, ResNet50_Weights
-
-#         # Old weights with accuracy 76.130%
-#         model = resnet50(weights=None)
-#         self.model = model 
-    
-#     def forward(self, x):
-#         print(x.shape)
-#         return self.model(x)
 

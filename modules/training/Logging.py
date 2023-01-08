@@ -1,3 +1,9 @@
+"""
+During training and validation we perform logging both to the console and to wandb
+This script defines the relevant loggers, keeping track of the metrics and 
+reporting the performance during training and validation. 
+"""
+
 from torch import nn 
 import torch 
 import wandb
@@ -10,6 +16,13 @@ class Logger(nn.Module):
         super().__init__()
 
 class EpochLogger(Logger):
+    """
+    This Logger keeps track of metrics and predictions during training and validation.
+    As such, some of the functions are currently near duplicates of each other. 
+    We decided to split these functions into training and validation versions so
+    that we have better control over exactly what we would like to track for training
+    and for validation. 
+    """
     def __init__(self, epoch: int, trainer, metrics: list[Metric]) -> None:
         """
         Keep track of different stats for an epoch
@@ -42,18 +55,14 @@ class EpochLogger(Logger):
         Compute metrics from trainer and self.val_buffer and save the relevant information
         The loss is not computed and it is kept as before
         """
-        #loss_buffer = []
         metric_buffer_train = {m.name: [] for m in self.metrics}
 
         buf = self.train_buffer[i]
         pred = torch.concat([b[0] for b in buf], axis=0)
-        y = torch.concat([b[-1] for b in buf], axis=0)
+        y = torch.concat([b[-1] for b in buf], axis=0) # ground truth
 
         for metric in self.metrics:
             metric_buffer_train[metric.name].append(metric(pred, y))
-        #loss_buffer.append(self.trainer.criterion(pred, y))
-
-        #metric_buffer['loss'] = loss_buffer
 
         # make everything tensors and keep only the mean
         for k, v in metric_buffer_train.items():
@@ -77,7 +86,7 @@ class EpochLogger(Logger):
 
         buf = self.val_buffer[i]
         pred = torch.concat([b[0] for b in buf], axis=0)
-        y = torch.concat([b[-1] for b in buf], axis=0)
+        y = torch.concat([b[-1] for b in buf], axis=0) # ground truth
 
         for metric in self.metrics:
             metric_buffer[metric.name].append(metric(pred, y))
@@ -97,7 +106,7 @@ class EpochLogger(Logger):
 
     def register_val(self, i, pred, y):
         """
-        Register prediciton and ground truth for iteration i
+        Register prediciton and ground truth for iteration i in the validation buffer
         """
         assert torch.all(torch.logical_and(pred >= 0, pred <= 1)), f'got an invalid range for predictions: {pred.min()=}, {pred.max()=}'
         if not i in self.val_buffer.keys():
@@ -107,7 +116,7 @@ class EpochLogger(Logger):
 
     def register_train(self, i, pred, y):
         """
-        Register prediciton and ground truth for iteration i
+        Register prediciton and ground truth for iteration i in the train buffer
         """
         assert torch.all(torch.logical_and(pred >= 0, pred <= 1)), f'got an invalid range for predictions: {pred.min()=}, {pred.max()=}'
         if not i in self.train_buffer.keys():
@@ -150,9 +159,6 @@ class EpochLogger(Logger):
     def get_metric_train(self, name, i=-1):
         i = self.map_id_to_iteration_train(i)
         return self.train_reports[i][name]
-
-    # Duplicating functions for training
-    # Done to: get_validation_buffer, map_id_to_iteration, get_metric
 
     def get_train_buffer(self, i=-1):
         """
@@ -214,7 +220,7 @@ class WandbLogger(Logger):
         wandb.init(project=project_name, entity="ai4goodbirdclef", name=experiment_name, config=config, group=group)
         wandb.watch(trainer.model)
 
-    def __call__(self, stats: dict):
+    def __call__(self, stats: dict, log_rankings=True):
         """
         stats is a dict with keys 'train_loss', 'val_loss', 'pred_ranking' and 'y_ranking'
         where train_loss, val_loss are floats and pred_ranking, y_ranking are iterable such that in each
@@ -233,16 +239,20 @@ class WandbLogger(Logger):
         wandb.log(stats)
         '''
         # wandb.log({k: stats[k] for k in self.stat_names})
-        for pred, y in zip(stats['pred_ranking_val'], stats['y_ranking_val']):
-            self.wandb_table.add_data(pred, y)
-        stats['predictions_val'] = self.wandb_table
-        for pred, y in zip(stats['pred_ranking_train'], stats['y_ranking_train']):
-            self.wandb_table.add_data(pred, y)
-        stats['predictions_train'] = self.wandb_table
-        stats.pop('y_ranking_val')
-        stats.pop('y_ranking_train')
-        stats.pop('pred_ranking_val')
-        stats.pop('pred_ranking_train')
+        if log_rankings:
+            for pred, y in zip(stats['pred_ranking_val'], stats['y_ranking_val']):
+                self.wandb_table.add_data(pred, y)
+            stats['predictions_val'] = self.wandb_table
+            for pred, y in zip(stats['pred_ranking_train'], stats['y_ranking_train']):
+                self.wandb_table.add_data(pred, y)
+            stats['predictions_train'] = self.wandb_table
+        try:
+            stats.pop('y_ranking_val')
+            stats.pop('y_ranking_train')
+            stats.pop('pred_ranking_val')
+            stats.pop('pred_ranking_train')
+        except:
+            pass 
         # wandb.log({"predictions": self.wandb_table})
         wandb.log(stats)
     
@@ -300,10 +310,6 @@ class TrainLogger(Logger):
     def get_logs(self):
         """
         Return the epochs registered here 
-
-        TODO: may want to change this because of memory issues
-        One way to do so is to settle on some key statistics that we are interested in for each 
-        epoch and only save those rather than all of the epoch data
         """
         return self.epochs 
 

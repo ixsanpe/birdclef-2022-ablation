@@ -1,20 +1,17 @@
-# %%
+
 import pandas as pd
 from skmultilearn.model_selection import iterative_train_test_split, IterativeStratification
 import json
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 from SimpleDataset import SimpleDataset
-
+import argparse 
 from decouple import config
 
 DATA_PATH = config("DATA_PATH")
 SPEC_PATH = config('SPEC_PATH')
 SPLIT_PATH = config('SPLIT_PATH')
-AUGMENT_PATH = config('AUGMENT_PATH')
-# random_state = 42 # appparently, the split function is deterministic, so no need for a random_state
-
+SPLIT_PATH_KFOLD = config('SPLIT_PATH_KFOLD')
 
 def split_data(save_path, train_split = 0.9 , test_split = 0.05, val_split = 0.05):
 
@@ -51,8 +48,6 @@ def split_data(save_path, train_split = 0.9 , test_split = 0.05, val_split = 0.0
     metadata_val.to_csv(os.path.join(save_path, 'val_metadata.csv'))
     metadata_test.to_csv(os.path.join(save_path, 'test_metadata.csv'))
 
-##save_path = os.path.join(SPLIT_PATH, "split_2")
-##split_data(save_path, train_split=0.9, val_split=0.05, val_split=0.05)
 
 def k_split_data(save_path, k=3):
     metadata_path = f'{DATA_PATH}train_metadata.csv'
@@ -62,8 +57,6 @@ def k_split_data(save_path, k=3):
     # Load data 
     with open(bird_path) as f:
         birds = json.load(f)
-
-    num_classes = len(birds)
 
     metadata = pd.read_csv(metadata_path)
 
@@ -90,7 +83,18 @@ def k_split_data(save_path, k=3):
         metadata_test.to_csv(os.path.join(save_path_k, 'val_metadata.csv'))
 
 if __name__ == '__main__':
-    # save_path = "splits/3_fold_split"
-    # k_split_data(save_path, k=3)
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--k', choices=[1, 3], type=int, help='number of splits for which to split the data')
+    args = parser.parse_args()
+    k = args.k
+
+    print(f'splitting data with {k=}')
+    if k == 1:
+        save_path = SPLIT_PATH
+        split_data(save_path, train_split=.95, test_split=0., val_split=.05)
+    else:
+        assert k==3, f'We have implemented this only for k=3 but got {k=}. See .env file'
+        save_path = SPLIT_PATH_KFOLD
+        k_split_data(save_path, k=k)
+    
 

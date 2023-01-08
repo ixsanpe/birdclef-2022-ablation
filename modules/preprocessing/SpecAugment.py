@@ -27,14 +27,10 @@ import torch
         d['x']=T.TimeMasking(T.FrequencyMasking(T.TimeStretch(d['x'],rate=1.2),freq_mask_param=80),time_mask_param=80)'''
 
 
-#taken from https://pytorch.org/audio/stable/transforms.html, still basic
+# taken from https://pytorch.org/audio/stable/transforms.html
 class SpecAugment(nn.Module):
     def __init__(
         self,
-        input_freq=16000,
-        resample_freq=8000,
-        n_fft=1024,
-        n_mel=256,
         stretch_factor=0.8
     ):
         super().__init__()
@@ -44,8 +40,5 @@ class SpecAugment(nn.Module):
                 T.TimeMasking(time_mask_param=80),
             )
     def forward(self, d: dict):
-        #print(d['x'].shape)
         d['x']= self.spec_aug(d['x'])
-        #print(d['x'].shape)
-        #print(d['x']==None)
         return d
