@@ -1,3 +1,9 @@
+"""
+During training and validation we perform logging both to the console and to wandb
+This script defines the relevant loggers, keeping track of the metrics and 
+reporting the performance during training and validation. 
+"""
+
 from torch import nn 
 import torch 
 import wandb
@@ -10,6 +16,13 @@ class Logger(nn.Module):
         super().__init__()
 
 class EpochLogger(Logger):
+    """
+    This Logger keeps track of metrics and predictions during training and validation.
+    As such, some of the functions are currently near duplicates of each other. 
+    We decided to split these functions into training and validation versions so
+    that we have better control over exactly what we would like to track for training
+    and for validation. 
+    """
     def __init__(self, epoch: int, trainer, metrics: list[Metric]) -> None:
         """
         Keep track of different stats for an epoch
@@ -18,7 +31,7 @@ class EpochLogger(Logger):
             epoch:
                 the epoch index to keep track of
             trainer:
-                the Trainer being trained this epoch. EpochLogger uses many of trainer's attributes (e.g. trainer.verbose)
+                the Trainer being trained this epoch. EpochLogger uses many of trainer's attributes 
         
         """
         super().__init__()
@@ -31,8 +44,7 @@ class EpochLogger(Logger):
         self.train_buffer = {}
         self.val_reports = {}
         self.train_reports = {}
-        if trainer.verbose:
-            print(f'starting epoch {epoch}')
+        print(f'starting epoch {epoch}')
 
     def train_report(self):
         print(f'iteration {self.i}\t runnning loss {self.running_train_loss / self.i :.3f}\n')
@@ -42,18 +54,14 @@ class EpochLogger(Logger):
         Compute metrics from trainer and self.val_buffer and save the relevant information
         The loss is not computed and it is kept as before
         """
-        #loss_buffer = []
         metric_buffer_train = {m.name: [] for m in self.metrics}
 
         buf = self.train_buffer[i]
         pred = torch.concat([b[0] for b in buf], axis=0)
-        y = torch.concat([b[-1] for b in buf], axis=0)
+        y = torch.concat([b[-1] for b in buf], axis=0) # ground truth
 
         for metric in self.metrics:
             metric_buffer_train[metric.name].append(metric(pred, y))
-        #loss_buffer.append(self.trainer.criterion(pred, y))
-
-        #metric_buffer['loss'] = loss_buffer
 
         # make everything tensors and keep only the mean
         for k, v in metric_buffer_train.items():
@@ -77,7 +85,7 @@ class EpochLogger(Logger):
 
         buf = self.val_buffer[i]
         pred = torch.concat([b[0] for b in buf], axis=0)
-        y = torch.concat([b[-1] for b in buf], axis=0)
+        y = torch.concat([b[-1] for b in buf], axis=0) # ground truth
 
         for metric in self.metrics:
             metric_buffer[metric.name].append(metric(pred, y))
@@ -91,13 +99,12 @@ class EpochLogger(Logger):
         
         self.val_reports[i] = metric_buffer # save the buffer for later use
 
-        if self.trainer.verbose:
-            print(f'validation report for iteration {i}')
-            print(*[f'{k}\t {v: .3f}' for k, v in metric_buffer.items()], sep='\n') 
+        print(f'validation report for iteration {i}')
+        print(*[f'{k}\t {v: .3f}' for k, v in metric_buffer.items()], sep='\n') 
 
     def register_val(self, i, pred, y):
         """
-        Register prediciton and ground truth for iteration i
+        Register prediciton and ground truth for iteration i in the validation buffer
         """
         assert torch.all(torch.logical_and(pred >= 0, pred <= 1)), f'got an invalid range for predictions: {pred.min()=}, {pred.max()=}'
         if not i in self.val_buffer.keys():
@@ -107,7 +114,7 @@ class EpochLogger(Logger):
 
     def register_train(self, i, pred, y):
         """
-        Register prediciton and ground truth for iteration i
+        Register prediciton and ground truth for iteration i in the train buffer
         """
         assert torch.all(torch.logical_and(pred >= 0, pred <= 1)), f'got an invalid range for predictions: {pred.min()=}, {pred.max()=}'
         if not i in self.train_buffer.keys():
@@ -151,9 +158,6 @@ class EpochLogger(Logger):
         i = self.map_id_to_iteration_train(i)
         return self.train_reports[i][name]
 
-    # Duplicating functions for training
-    # Done to: get_validation_buffer, map_id_to_iteration, get_metric
-
     def get_train_buffer(self, i=-1):
         """
         Get the buffer containing predictions (in the interval (0, 1)) and ground truth for the ith validation run
@@ -178,8 +182,7 @@ class EpochLogger(Logger):
         do some final computations/reporting at the end of the epoch
         """
         assert self.i == len(loader)
-        if self.trainer.verbose:
-            print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss/self.i :.3f}\n')
+        print(f'finished epoch {self.epoch} with running loss: {self.running_train_loss/self.i :.3f}\n')
 
 class WandbLogger(Logger):
     def __init__(
@@ -304,16 +307,11 @@ class TrainLogger(Logger):
     def get_logs(self):
         """
         Return the epochs registered here 
-
-        TODO: may want to change this because of memory issues
-        One way to do so is to settle on some key statistics that we are interested in for each 
-        epoch and only save those rather than all of the epoch data
         """
         return self.epochs 
 
     def start_training(self):
-        if self.trainer.verbose:
-            print(f'{20*"#"}\nStarting Training on {self.trainer.device} \n{20*"#"}')
+        print(f'{20*"#"}\nStarting Training on {self.trainer.device} \n{20*"#"}')
 
     def start_epoch(self, epoch):
         epoch_logger = EpochLogger(epoch, self.trainer, self.metrics)

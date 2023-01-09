@@ -9,7 +9,7 @@ class DummyTrainer():
         self.model = nn.Identity()
 
 def main():
-    run = 'InstanceNorm'
+    run = 'reference'
     metrics = [
         'train_F1Ours', 'val_F1Ours', 'train_F1Micro', 
         'val_F1Micro', 'train_loss', 'val_loss', 

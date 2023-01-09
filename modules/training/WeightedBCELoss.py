@@ -1,3 +1,5 @@
+
+
 import numpy
 import torch
 import torch.nn as nn
@@ -17,10 +19,6 @@ class WeightedBCELoss(nn.Module):
         self.WEIGHTSS = torch.Tensor(np.array(self.weights))
 
     def forward(self, inputs, targets, smooth=1):
-        
-        #comment out if your model contains a sigmoid or equivalent activation layer
-        #inputs = F.sigmoid(inputs)       
-        
         #flatten label and prediction tensors
         inputs = inputs.view(-1)
         targets = targets.view(-1)
@@ -30,8 +28,6 @@ class WeightedBCELoss(nn.Module):
         weights1=(self.WEIGHTSS).repeat(bs)
         
         #first compute binary cross-entropy 
-        #print('targets:',targets,targets.size())
-        #print(targets)
         BCE_weight = F.binary_cross_entropy(inputs.to(device), targets.to(device), reduction='mean',weight=weights1.to(device))
                        
         return BCE_weight.to(device)
