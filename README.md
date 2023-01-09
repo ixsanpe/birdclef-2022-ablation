@@ -27,7 +27,7 @@ The directory where we pre-save the spectrograms augmentations
 The directory where the splits for CV are done
 * SPLIT_PATH_KFOLD=/cluster/work/igp_psr/ai4good/group-2b/Lars_code/birdclef-2022/splits/3_fold_split/
 The directory where the data from freefield is stored
-* NOISE_PATH=/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav
+* NOISE_PATH=/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav/
 
 Make sure you have the rights to these directories since otherwise, writing to them is not possible.
 

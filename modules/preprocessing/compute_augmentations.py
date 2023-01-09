@@ -17,7 +17,7 @@ import sys
 # Path where data is located. The path should contain a folder called "train_audio" and a folder called "aug"
 DATA_PATH = config("DATA_PATH")
 audio_path = os.path.join(DATA_PATH, "train_audio")
-target_path = os.path.join(DATA_PATH, "aug")
+target_path = config("AUGMENT_PATH")
 
 # Directory for freefield background noise data. For the background noise augmentation, this is needed
 noise_path = config('NOISE_PATH')

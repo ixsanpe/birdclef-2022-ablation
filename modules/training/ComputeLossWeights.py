@@ -9,14 +9,14 @@ DATA_PATH = config("DATA_PATH")
 OUTPUT_DIR = config("OUTPUT_DIR")
 with open(f'{DATA_PATH}all_birds.json') as f:
     birds = json.load(f)
+
 class ComputeLossWeights():
-    def __init__(self, beta=0.9, all_birds=birds, metadata=None):
+    def __init__(self, beta=0.9,all_birds=birds,metadata=pd.read_csv(f'{DATA_PATH}train_metadata.csv')):
         super().__init__()
-        if metadata is None:
-            metadata = pd.read_csv(f'{DATA_PATH}train_metadata.csv')
         self.beta = beta 
         self.birds = all_birds
         self.metadata = metadata
+
 
 
     def remove_chars(self, s, chars=['[', ']', ' ', '\'']):
@@ -39,16 +39,15 @@ class ComputeLossWeights():
         labels = np.concatenate([primary_labels, secondary_labels])
         labels = np.delete(labels, np.argwhere(labels == ''))
 
-        # Count the occurrences of each bird
         counts=[0]*len(self.birds)
         i=0
         for bird in self.birds:
             counts[i]=max(sum(labels==bird),1) #needed for computing weigths later
             i=i+1
 
-        # Now, compute weights for the loss as described in https://towardsdatascience.com/handling-class-imbalanced-data-using-a-loss-specifically-made-for-it-6e58fd65ffab
+
+        #Now, compute weights for the loss as described in https://towardsdatascience.com/handling-class-imbalanced-data-using-a-loss-specifically-made-for-it-6e58fd65ffab
         counts=np.array(counts)
         weights=(1-self.beta)/(1-self.beta**counts)
         weights1 = weights/max(weights) # normalize so that the maximum weight is always 1
         return weights1
-
