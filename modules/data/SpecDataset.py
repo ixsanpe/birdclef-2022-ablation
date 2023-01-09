@@ -1,5 +1,6 @@
 import torch 
 from .SimpleDataset import SimpleDataset
+import warnings
 
 class SpecDataset(SimpleDataset):
     """
@@ -17,7 +18,12 @@ class SpecDataset(SimpleDataset):
         label = self.get_label(idx)
         
         if debug: print(path)
+
+        try:
+            spectrogram = torch.load(path)
+        except:
+            warnings.warn(f'Warning! Possibly corrupted file: {path}. Using unsafe solution')
+            spectrogram = torch.zeros((64, 1111)) 
         
-        spectrogram = torch.load(path)
 
         return spectrogram, label, path
