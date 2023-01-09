@@ -72,7 +72,11 @@ class AugmentDataset(SimpleDataset):
         
         if debug: print(path)
         
-        spectrogram = torch.load(path)
+        try:
+            spectrogram = torch.load(path)
+        except:
+            warnings.warn(f'Warning! Possibly corrupted file: {path}. Using unsafe solution')
+            spectrogram = torch.zeros((64, 1111)) 
 
         return spectrogram, label, path
 
