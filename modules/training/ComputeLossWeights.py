@@ -26,6 +26,7 @@ class ComputeLossWeights():
 
     def forward(self):
         # Get the primary and secondary labels from self.metadata
+
         df = self.metadata 
         primary_labels = df['primary_label'].replace('[', '').replace(']', '')
         primary_labels = pd.Series(primary_labels)
@@ -42,7 +43,7 @@ class ComputeLossWeights():
         counts=[0]*len(self.birds)
         i=0
         for bird in self.birds:
-            counts[i]=max(sum(labels==bird),1) #needed for computing weigths later
+            counts[i]=max(sum(labels==bird),1) 
             i=i+1
 
 
@@ -51,3 +52,5 @@ class ComputeLossWeights():
         weights=(1-self.beta)/(1-self.beta**counts)
         weights1 = weights/max(weights) # normalize so that the maximum weight is always 1
         return weights1
+
+
