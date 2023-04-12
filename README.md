@@ -4,34 +4,34 @@
 
 #### Setup
 - Create a conda environment with all dependencies:
-$ conda create -n ai4good -f environment.yml python=3.10
-$ conda activate ai4good
+´conda create -n ai4good -f environment.yml python=3.10´
+´conda activate ai4good´
 
 - The path to the data and the repository is read from environment variables which you have to create: 
-###################- You will need $ pip install python-decouple (or requirements.txt, which does so automatically)
-1. $ touch .env 
-2. $ nano .env 
+###################- You will need ´pip install python-decouple´ (or requirements.txt, which does so automatically)
+1. ´touch .env´
+2. ´nano .env´
 3. add the variables to indicate each directory:
 The directory where we extract the zip file from [Kaggle BirdClef2022](https://www.kaggle.com/c/birdclef-2022/data)
-* DATA_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/
+* DATA_PATH=./birdclef-2022/data/
 
 The directory where we save the configuration for training models 
-* OUTPUT_DIR=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/output/
+* OUTPUT_DIR=./birdclef-2022/output/
 
 The directory where we pre-save the spectrograms of the audio file to speed up training 
-* SPEC_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/spec/
+* SPEC_PATH=./birdclef-2022/data/spec/
 
 The directory where the splits for the data are saved
-* SPLIT_PATH=/cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/splits/split_1/
+* SPLIT_PATH=./birdclef-2022/splits/split_1/
 
 The directory where we pre-save the spectrograms augmentations 
-* AUGMENT_PATH = /cluster/work/igp_psr/ai4good/group-2b/birdclef-2022/data/aug/
+* AUGMENT_PATH = ./birdclef-2022/data/aug/
 
 The directory where the splits for CV are done
-* SPLIT_PATH_KFOLD=/cluster/work/igp_psr/ai4good/group-2b/Lars_code/birdclef-2022/splits/3_fold_split/
+* SPLIT_PATH_KFOLD=./birdclef-2022/splits/3_fold_split/
 
 The directory where the data from freefield is stored
-* NOISE_PATH=/cluster/work/igp_psr/ai4good/group-2b/freefield/freefield1010_nobirds/wav/
+* NOISE_PATH=./freefield/freefield1010_nobirds/wav/
 
 Make sure you have the rights to these directories since otherwise, writing to them is not possible.
 
