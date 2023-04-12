@@ -1,16 +1,16 @@
 # birdclef-2022-ablation
-## AI4Good project
-
+## AI4Good project: Approach to the [Kaggle BirdClef2022](https://www.kaggle.com/c/birdclef-2022/data) Challenge. 
+The project aims to design an ablation study to automatically include and exclude modules in the pipeline to estimate the influence of preprocessing, models, postprocessing steps. The code can be re-used for other projects!
 
 #### Setup
 - Create a conda environment with all dependencies:
-´conda create -n ai4good -f environment.yml python=3.10´
-´conda activate ai4good´
+`conda create -n ai4good -f environment.yml python=3.10`
+`conda activate ai4good`
 
 - The path to the data and the repository is read from environment variables which you have to create: 
-###################- You will need ´pip install python-decouple´ (or requirements.txt, which does so automatically)
-1. ´touch .env´
-2. ´nano .env´
+###################- You will need `pip install python-decouple` (or requirements.txt, which does so automatically)
+1. `touch .env`
+2. `nano .env`
 3. add the variables to indicate each directory:
 The directory where we extract the zip file from [Kaggle BirdClef2022](https://www.kaggle.com/c/birdclef-2022/data)
 * DATA_PATH=./birdclef-2022/data/
