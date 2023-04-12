@@ -8,7 +8,7 @@ The project aims to design an ablation study to automatically include and exclud
 `conda activate ai4good`
 
 - The path to the data and the repository is read from environment variables which you have to create: 
-###################- You will need `pip install python-decouple` (or requirements.txt, which does so automatically)
+- You will need `pip install python-decouple` (or requirements.txt, which does so automatically)
 1. `touch .env`
 2. `nano .env`
 3. add the variables to indicate each directory:
